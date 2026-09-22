@@ -806,7 +806,7 @@ Never use ambient `herdr server stop` for Firstmate verification.
 An environment-only session selection can silently reach a different running server.
 The ambient stop command has no explicit target.
 
-`bin/fm-herdr-lab.sh` is the sole supported lifecycle helper for isolated verification.
+`bin/fm-herdr-lab.sh` is the sole supported lifecycle helper for isolated verification: sessions Firstmate itself generates and owns.
 The helper:
 
 - Provisions only non-default names beginning with `fm-lab-`.
@@ -819,6 +819,19 @@ Its before/after tripwire requires the live default-session snapshot to remain b
 
 The helper's header and `--help` own exact commands.
 Tests use thin compatibility wrappers in `tests/herdr-test-safety.sh` and never duplicate the destructive policy.
+
+## Existing-session retirement safety
+
+`bin/fm-herdr-session-retire.sh <session>` is the separate, sole supported owner for guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
+It never adopts a generated `fm-lab-*` session; `fm-herdr-lab.sh` structurally rejects those names, and this helper equally refuses them, routing the caller back to `fm-herdr-lab.sh teardown` instead.
+Retirement means stop-only: the helper never deletes a session, starts a server, restarts anything, or touches project clones.
+
+It requires the exact target argument (no ambient-only `HERDR_SESSION` selection), refuses the literal `default`, the literal `fm-remote`, and every `fm-lab-*` name, and requires exactly one matching session row with `default:false` and `running:true`.
+It requires the target's own workspace list to be empty, which structurally rules out every tab, pane, and agent too since each lives only inside a workspace this API can enumerate.
+It canonically snapshots every other session, which is what protects `default`, `fm-remote`, and everything else without a separate preserve-list interface, and repeats every check with fully fresh reads immediately before the single `herdr session stop` call, refusing on any drift or unreadable state.
+After stopping, it requires the target to report `running:false` and every other session to still match the pre-stop snapshot before reporting success.
+
+The helper's header and `--help` own exact commands.
 
 ## Active limits
 
