@@ -215,24 +215,12 @@ DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 # spaced; see bootstrap_parallel_spawn and the header doc above for why. Read
 # the same way config/lavish-axi-host is read. Absent means no staggering at
 # all, unchanged from today's default for every installation that does not
-# create the file.
-if ! BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT=$(fm_config_source_present "$CONFIG/ssh-launch-stagger-host"); then
-  exit 1
-fi
+# create the file. Reading and validating it is deferred to just before the
+# network sweeps that consume it (see below), so a malformed file only
+# refuses the run that would actually use it, not `lavish-compatible`,
+# `install`, or a detect-only/network-skip session that never forks a
+# network batch.
 BOOTSTRAP_STAGGER_HOST=""
-if [ "$BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT" = 1 ]; then
-  if [ ! -f "$CONFIG/ssh-launch-stagger-host" ] || [ ! -r "$CONFIG/ssh-launch-stagger-host" ]; then
-    echo "error: config/ssh-launch-stagger-host must be a readable regular file" >&2
-    exit 1
-  fi
-  BOOTSTRAP_STAGGER_HOST=$(cat "$CONFIG/ssh-launch-stagger-host") || exit 1
-  case "$BOOTSTRAP_STAGGER_HOST" in
-    ''|*[[:space:][:cntrl:]]*)
-      echo "error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace" >&2
-      exit 1
-      ;;
-  esac
-fi
 
 # Network-phase selection (see the header). An unrecognized value resolves to
 # `all` so a malformed override runs every step rather than silently dropping a
@@ -1692,6 +1680,22 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
     fi
   fi
   if network_phase; then
+    if ! BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT=$(fm_config_source_present "$CONFIG/ssh-launch-stagger-host"); then
+      exit 1
+    fi
+    if [ "$BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT" = 1 ]; then
+      if [ ! -f "$CONFIG/ssh-launch-stagger-host" ] || [ ! -r "$CONFIG/ssh-launch-stagger-host" ]; then
+        echo "error: config/ssh-launch-stagger-host must be a readable regular file" >&2
+        exit 1
+      fi
+      BOOTSTRAP_STAGGER_HOST=$(cat "$CONFIG/ssh-launch-stagger-host") || exit 1
+      case "$BOOTSTRAP_STAGGER_HOST" in
+        ''|*[[:space:][:cntrl:]]*)
+          echo "error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace" >&2
+          exit 1
+          ;;
+      esac
+    fi
     if network_sweep_authorized 'dead-secondmate relaunch'; then
       __fm_timing_stamp=$(fm_timing_now_ms)
       secondmate_liveness_sweep
