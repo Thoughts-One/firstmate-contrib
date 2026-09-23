@@ -1,0 +1,43 @@
+lab session: fm-lab-fm-slot-guard-4101965-4771
+
+=== S1: fresh spawn of slotA claims its pool slot
+$ fm-spawn.sh slotA ... --backend herdr  -> exit 0
+  | warning: /tmp/fm-slot-guard-live.qGRN0n/home/data/slotA/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  | spawned slotA harness=sh kind=ship mode=no-mistakes yolo=off window=fm-lab-fm-slot-guard-4101965-4771:w1:p2 worktree=/tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+slotA worktree=/tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project pane=w1:p2
+claim on slot:
+  task=slotA
+  home=/tmp/fm-slot-guard-live.qGRN0n/home
+S1 RESULT: PASS
+
+=== Park slotA: close its pane so Treehouse sees the slot free, but keep state/slotA.meta
+pane close rc=0
+  1     available    /tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+/tmp/fm-slot-guard-live.qGRN0n/home/state/slotA.meta
+
+=== S2 (adversarial): spawn slotB; Treehouse hands back slotA's slot; spawn must refuse
+$ fm-spawn.sh slotB ... --backend herdr  -> exit 1
+  | warning: /tmp/fm-slot-guard-live.qGRN0n/home/data/slotB/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  | error: Treehouse handed back pool slot /tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project, but its slot-owner claim still names task slotA (home /tmp/fm-slot-guard-live.qGRN0n/home), which still has a task record there; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh slotA), then re-run spawn; inspect window fm-lab-fm-slot-guard-4101965-4771:w2:p2
+refused slot: /tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+claim after:
+  task=slotA
+  home=/tmp/fm-slot-guard-live.qGRN0n/home
+state/slotB.meta exists? no
+S2 RESULT: PASS
+
+=== Close slotB's leftover refusal pane (named in the error) and drop slotA's record (claim now stale)
+leftover pane named by refusal: w2:p2
+pane close rc=0
+  1     available    /tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+
+=== S3: spawn slotC; slot claim names recordless slotA -> stale, spawn proceeds and overwrites
+$ fm-spawn.sh slotC ... --backend herdr  -> exit 0
+  | warning: /tmp/fm-slot-guard-live.qGRN0n/home/data/slotC/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  | spawned slotC harness=sh kind=ship mode=no-mistakes yolo=off window=fm-lab-fm-slot-guard-4101965-4771:w3:p2 worktree=/tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+slotC worktree=/tmp/fm-slot-guard-live.qGRN0n/project/.treehouse/project-c579ab/1/project
+claim after:
+  task=slotC
+  home=/tmp/fm-slot-guard-live.qGRN0n/home
+S3 RESULT: PASS
+teardown rc=0
