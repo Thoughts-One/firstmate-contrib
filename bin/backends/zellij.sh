@@ -311,7 +311,8 @@ fm_backend_zellij_pane_exists() {  # <session> <pane_id>
 fm_backend_zellij_tab_matches_label() {  # <session> <tab_id> <label>
   local session=$1 tab_id=$2 label=$3 scoped tabs count
   scoped=$(fm_backend_zellij_scoped_title "$label")
-  tabs=$(fm_backend_zellij_cli "$session" action list-tabs --json 2>/dev/null)
+  tabs=$(fm_backend_zellij_cli "$session" action list-tabs --json 2>/dev/null) || return 1
+  [ -n "$tabs" ] || return 1
   printf '%s' "$tabs" | jq -e --argjson t "$tab_id" --arg want "$scoped" \
     '[.[]? | select(.tab_id == $t and .name == $want)] | length > 0' >/dev/null 2>&1 && return 0
   printf '%s' "$tabs" | jq -e --argjson t "$tab_id" --arg want "$label" \
