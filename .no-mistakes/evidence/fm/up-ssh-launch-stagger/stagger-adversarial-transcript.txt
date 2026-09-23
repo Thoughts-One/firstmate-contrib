@@ -1,0 +1,80 @@
+=== S1: mixed batch: 3 mates on configured host host-stag, 1 on host-other; FM_BOOTSTRAP_NETWORK=only ===
+exit=0
+BOOTSTRAP_INFO: remote secondmate a1 already live (host=host-stag)
+BOOTSTRAP_INFO: remote secondmate a2 already live (host=host-stag)
+BOOTSTRAP_INFO: remote secondmate a3 already live (host=host-stag)
+BOOTSTRAP_INFO: remote secondmate o1 already live (host=host-other)
+--- raw timing log (host command epoch subcommand) ---
+host-stag fm-remote-doctor.sh 1790164335.9105015 
+host-other fm-remote-doctor.sh 1790164335.9206543 
+host-stag fm-remote-doctor.sh 1790164336.334443 
+host-stag fm-remote-secondmate-control.sh 1790164336.39472 state
+host-other fm-remote-secondmate-control.sh 1790164336.4235554 state
+host-stag fm-remote-secondmate-control.sh 1790164336.477285 state
+host-stag fm-remote-doctor.sh 1790164336.7131863 
+host-stag fm-remote-secondmate-control.sh 1790164336.8293233 state
+host-stag fm-remote-secondmate-control.sh 1790164337.6999447 sync
+host-other fm-remote-secondmate-control.sh 1790164337.728939 sync
+host-stag fm-remote-secondmate-control.sh 1790164338.1398096 sync
+host-stag fm-remote-secondmate-control.sh 1790164338.7162685 sync
+liveness sweep (fm-remote-doctor.sh):
+   +0.000s  host-stag
+   +0.010s  host-other
+   +0.424s  host-stag
+   +0.803s  host-stag
+   configured-host gaps: ['0.424', '0.379'] other-host offset from batch start: ['0.010']
+convergence (control sync):
+   +0.000s  host-stag
+   +0.029s  host-other
+   +0.440s  host-stag
+   +1.016s  host-stag
+   configured-host gaps: ['0.440', '0.576'] other-host offset from batch start: ['0.029']
+call counts: {('host-stag', 'fm-remote-doctor.sh', ''): 3, ('host-other', 'fm-remote-doctor.sh', ''): 1, ('host-stag', 'fm-remote-secondmate-control.sh', 'state'): 3, ('host-other', 'fm-remote-secondmate-control.sh', 'state'): 1, ('host-stag', 'fm-remote-secondmate-control.sh', 'sync'): 3, ('host-other', 'fm-remote-secondmate-control.sh', 'sync'): 1}
+
+=== S2: malformed config host-stag\ \\n ===
+network-only exit=1
+error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace
+ssh/fetch calls logged: 0 ; leftover fleet temp files: 0
+project clone refs after (no orphan fetch should have run):
+   (no remote-tracking refs)
+lavish-compatible exit=1 output=[]
+FM_BOOTSTRAP_NETWORK=skip exit=0; stagger error present: 0
+FM_BOOTSTRAP_DETECT_ONLY=1 exit=0; stagger error present: 0
+
+=== S2: malformed config host-stag\\nhost-other\\n ===
+network-only exit=1
+error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace
+ssh/fetch calls logged: 0 ; leftover fleet temp files: 0
+project clone refs after (no orphan fetch should have run):
+   (no remote-tracking refs)
+lavish-compatible exit=1 output=[]
+FM_BOOTSTRAP_NETWORK=skip exit=0; stagger error present: 0
+FM_BOOTSTRAP_DETECT_ONLY=1 exit=0; stagger error present: 0
+
+=== S2: malformed config \\n ===
+network-only exit=1
+error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace
+ssh/fetch calls logged: 0 ; leftover fleet temp files: 0
+project clone refs after (no orphan fetch should have run):
+   (no remote-tracking refs)
+lavish-compatible exit=1 output=[]
+FM_BOOTSTRAP_NETWORK=skip exit=0; stagger error present: 0
+FM_BOOTSTRAP_DETECT_ONLY=1 exit=0; stagger error present: 0
+
+=== S2: malformed config host\ stag\\n ===
+network-only exit=1
+error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace
+ssh/fetch calls logged: 0 ; leftover fleet temp files: 0
+project clone refs after (no orphan fetch should have run):
+   (no remote-tracking refs)
+lavish-compatible exit=1 output=[]
+FM_BOOTSTRAP_NETWORK=skip exit=0; stagger error present: 0
+FM_BOOTSTRAP_DETECT_ONLY=1 exit=0; stagger error present: 0
+
+=== S3: config is a directory (unreadable as regular file) ===
+exit=1 error: config/ssh-launch-stagger-host must be a readable regular file
+ssh calls: 0
+good-config lavish-compatible (lavish-axi 99.0.0 present) exit=0
+good-config lavish-compatible (lavish-axi absent) exit=1
+bad-config lavish-compatible (lavish-axi 99.0.0 present) exit=0
+bad-config lavish-compatible (lavish-axi absent) exit=1

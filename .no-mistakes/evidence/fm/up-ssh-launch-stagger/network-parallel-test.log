@@ -1,0 +1,5 @@
+ok - bootstrap network (parallel): per-mate output stays intact, fail-closed, and correctly sequenced
+ok - bootstrap network (fallback): per-mate output stays intact, fail-closed, and correctly sequenced
+ok - bootstrap network launch stagger (config present): repeat gaps=['0.398', '0.364'] distinct gaps=['0.033', '0.001'] - repeated launches to the configured host are staggered, other hosts stay parallel, no retry
+ok - bootstrap network launch stagger (config absent): repeat span=0.002 - repeated launches to the same host are never staggered without the config file
+# all fm-bootstrap-network-parallel tests passed
