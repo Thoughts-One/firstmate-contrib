@@ -1,0 +1,16 @@
+[bun 1.3.14] unsupervised, stop_hook_active=false -> {
+ "continue": true,
+ "additionalContext": "⁣FIRSTMATE_OP: v1 turn-end-guard: TURN WOULD END BLIND - supervision is off. The watcher cycle is missing, failed, or unhealthy. Follow the harness recovery instruction below before ending the turn.\n\n●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n●  TURN WOULD END BLIND - SUPERVISION IS OFF\n●  1 task(s) in flight, but no live watcher holds this home lock (last beat: never).\n●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.\n●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+}
+[bun 1.3.14] unsupervised, stop_hook_active=true (the compelled continuation's stop) -> undefined (session settles)
+[bun 1.3.14] nothing in flight, stop_hook_active=false -> undefined (session settles)
+[bun 1.3.14] CONTRACT OK
+host exit status: 0
+[node v24.18.0] unsupervised, stop_hook_active=false -> {
+ "continue": true,
+ "additionalContext": "⁣FIRSTMATE_OP: v1 turn-end-guard: TURN WOULD END BLIND - supervision is off. The watcher cycle is missing, failed, or unhealthy. Follow the harness recovery instruction below before ending the turn.\n\n●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n●  TURN WOULD END BLIND - SUPERVISION IS OFF\n●  1 task(s) in flight, but no live watcher holds this home lock (last beat: never).\n●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.\n●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+}
+[node v24.18.0] unsupervised, stop_hook_active=true (the compelled continuation's stop) -> undefined (session settles)
+[node v24.18.0] nothing in flight, stop_hook_active=false -> undefined (session settles)
+[node v24.18.0] CONTRACT OK
+host exit status: 0

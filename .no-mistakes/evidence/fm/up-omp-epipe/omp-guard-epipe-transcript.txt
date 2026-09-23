@@ -1,0 +1,26 @@
+Harness: real .omp/extensions/fm-primary-turnend-guard.ts loaded over a fake omp API; session_stop handler invoked 200x.
+Guard child bin/fm-turnend-guard.sh: '#!/bin/sh; exec 0<&-; exit 2' (closes stdin unread, exits at once).
+
+== runtime=node version=base (9296f9b) exit=1
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: write EPIPE
+Emitted 'error' event on Socket instance at:
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+
+Node.js v24.18.0
+
+== runtime=node version=fix (d8590af) exit=0
+survived 200 session_stop calls; compelled continuations=200
+
+== runtime=bun version=base (9296f9b) exit=0
+survived 200 session_stop calls; compelled continuations=200
+
+== runtime=bun version=fix (d8590af) exit=0
+survived 200 session_stop calls; compelled continuations=200
+

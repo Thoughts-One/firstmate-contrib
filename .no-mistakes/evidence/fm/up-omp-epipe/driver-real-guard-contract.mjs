@@ -1,0 +1,17 @@
+import { pathToFileURL } from "node:url";
+import { rmSync, writeFileSync } from "node:fs";
+const handlers = new Map();
+const mod = await import(pathToFileURL(process.env.EXT).href);
+mod.default({ on(e, h) { handlers.set(e, h); }, sendMessage() {} });
+const stop = handlers.get("session_stop"), meta = `${process.env.FM_HOME}/state/task-1.meta`;
+const rt = globalThis.Bun ? `bun ${Bun.version}` : `node ${process.version}`;
+const r1 = await stop({ type: "session_stop", stop_hook_active: false }, {});
+console.log(`[${rt}] unsupervised, stop_hook_active=false ->`, JSON.stringify(r1, null, 1));
+const r2 = await stop({ type: "session_stop", stop_hook_active: true }, {});
+console.log(`[${rt}] unsupervised, stop_hook_active=true (the compelled continuation's stop) ->`, r2 === undefined ? "undefined (session settles)" : JSON.stringify(r2));
+rmSync(meta);
+const r3 = await stop({ type: "session_stop", stop_hook_active: false }, {});
+console.log(`[${rt}] nothing in flight, stop_hook_active=false ->`, r3 === undefined ? "undefined (session settles)" : JSON.stringify(r3));
+writeFileSync(meta, "");
+const ok = r1?.continue === true && r1.additionalContext.includes("TURN WOULD END BLIND") && r1.additionalContext.includes("no live watcher holds this home lock") && r2 === undefined && r3 === undefined;
+console.log(`[${rt}] CONTRACT ${ok ? "OK" : "BROKEN"}`); process.exit(ok ? 0 : 1);
