@@ -1,0 +1,15 @@
+=== jq: jq-1.6
+base  empty pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=0
+head  empty pane_exists(7)=1  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+base  fail  pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=0
+head  fail  pane_exists(7)=1  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+base  ok    pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=1
+head  ok    pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=1
+=== jq: jq-1.8.2
+base  empty pane_exists(7)=4  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+head  empty pane_exists(7)=1  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+base  fail  pane_exists(7)=4  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+head  fail  pane_exists(7)=1  tab_matches_label(3,fm-task)=1  tab_matches_label(3,other)=1
+base  ok    pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=1
+head  ok    pane_exists(7)=0  tab_matches_label(3,fm-task)=0  tab_matches_label(3,other)=1
+(0 = present/matches, nonzero = absent/no match; fake zellij on PATH, real backend functions sourced)

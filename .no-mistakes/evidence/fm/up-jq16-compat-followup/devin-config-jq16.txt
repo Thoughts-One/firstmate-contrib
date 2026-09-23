@@ -1,0 +1,63 @@
+### jq on PATH: jq-1.6
+### BASE (9296f9b) fm-devin-config.sh
+jq: error: syntax error, unexpected end, expecting IDENT or __loc__ (Unix shell quoting issues?) at <top-level>, line 10:
+  .hooks.SessionEnd = ((.hooks.SessionEnd // []) + [hook($end)])                                                          
+jq: 1 compile error
+exit=3
+user.json
+### FIXED (HEAD) fm-devin-config.sh
+exit=0
+600 <STATE>/t1.devin-config.json
+{
+  "theme": "dark",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "user-stop"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3764MFTCVH1A42DDS66VAVH/bin/fm-busy-event.sh' apply '<STATE>' 't1' idle --gen '7' --source devin-hook --event stop >/dev/null 2>&1 && touch '<STATE>/t1.turn-ended'; true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3764MFTCVH1A42DDS66VAVH/bin/fm-busy-event.sh' apply '<STATE>' 't1' busy --gen '7' --source devin-hook --event user-prompt-submit >/dev/null 2>&1 || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3764MFTCVH1A42DDS66VAVH/bin/fm-busy-event.sh' apply '<STATE>' 't1' idle --gen '7' --source devin-hook --event session-end >/dev/null 2>&1 || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "attribution": false,
+  "read_config_from": {
+    "claude": false
+  }
+}
+### FIXED with jq 1.8 (no regression)
+exit=0
+{"attribution":false,"read_config_from":{"claude":false},"se":"'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3764MFTCVH1A42DDS66VAVH/bin/fm-busy-event.sh' apply '<STATE>' 't2' idle --gen '7' --source devin-hook --event session-end >/dev/null 2>&1 || true"}
