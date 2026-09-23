@@ -1546,22 +1546,34 @@ if [ "$RELAUNCH" -eq 0 ]; then
   # nothing worth waiting for. A sibling fresh spawn is different: the local
   # secondmate-liveness sweep (bin/fm-bootstrap.sh) can relaunch several dead
   # secondmates in one pass, forking each fm-spawn.sh concurrently, and each
-  # holds this lock for its whole launch - so the second relaunch used to lose
-  # this race and refuse outright even though nothing was actually unsafe.
-  # That holder gets a bounded wait instead, matched to the longest observed
-  # hold (~62s) with margin.
+  # holds this lock for its whole launch - so a relaunch used to lose that
+  # race and refuse outright even though nothing was actually unsafe. That
+  # holder gets a bounded wait instead, matched to the longest observed hold
+  # (~62s) with margin - and the bound applies per holder, not to the total
+  # wait, since the sweep's relaunches take the lock one after another rather
+  # than all racing the original holder. The holder is re-read on every poll
+  # so a forced teardown that takes the lock mid-wait still gets an immediate
+  # refusal instead of being waited out.
   SPAWN_TASK_SET_LOCK=$(fm_task_set_lock_path "$STATE") || {
     echo "error: could not resolve the task-set lock for $STATE" >&2
     exit 1
   }
-  SPAWN_TASK_SET_LOCK_WAIT_SECONDS=${FM_SPAWN_TASK_SET_LOCK_WAIT_SECONDS:-90}
-  case "$SPAWN_TASK_SET_LOCK_WAIT_SECONDS" in ''|*[!0-9]*|0) SPAWN_TASK_SET_LOCK_WAIT_SECONDS=90 ;; esac
+  SPAWN_TASK_SET_LOCK_WAIT_SECONDS=90
   if ! fm_lock_try_acquire "$SPAWN_TASK_SET_LOCK"; then
     SPAWN_TASK_SET_LOCK_ACQUIRED=0
-    if spawn_task_set_lock_holder_is_sibling_spawn "$FM_LOCK_HELD_PID" \
-      && fm_lock_acquire_wait_bounded "$SPAWN_TASK_SET_LOCK" "$SPAWN_TASK_SET_LOCK_WAIT_SECONDS"; then
-      SPAWN_TASK_SET_LOCK_ACQUIRED=1
-    fi
+    SPAWN_TASK_SET_LOCK_WAIT_HOLDER=
+    while spawn_task_set_lock_holder_is_sibling_spawn "$FM_LOCK_HELD_PID"; do
+      if [ "$FM_LOCK_HELD_PID" != "$SPAWN_TASK_SET_LOCK_WAIT_HOLDER" ]; then
+        SPAWN_TASK_SET_LOCK_WAIT_HOLDER=$FM_LOCK_HELD_PID
+        SECONDS=0
+      fi
+      [ "$SECONDS" -lt "$SPAWN_TASK_SET_LOCK_WAIT_SECONDS" ] || break
+      sleep 0.2
+      if fm_lock_try_acquire "$SPAWN_TASK_SET_LOCK"; then
+        SPAWN_TASK_SET_LOCK_ACQUIRED=1
+        break
+      fi
+    done
     if [ "$SPAWN_TASK_SET_LOCK_ACQUIRED" -ne 1 ]; then
       echo "error: this home's task set is locked by $(spawn_task_set_lock_holder_label "$FM_LOCK_HELD_PID"); refusing to create task $ID rather than racing it" >&2
       exit 1

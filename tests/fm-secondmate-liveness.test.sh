@@ -526,16 +526,17 @@ test_sweep_skipped_under_detect_only() {
 }
 
 # make_concurrent_relaunch_tmux <dir> <new-window-sleep-seconds>: every
-# recorded window (fm-smconc1, fm-smconc2) is readable with a bare zsh
-# foreground process (confirmed dead), and every new-window call sleeps for
-# the given duration before succeeding. That sleep happens while
+# recorded window (fm-smconc1, fm-smconc2, fm-smconc3) is readable with a bare
+# zsh foreground process (confirmed dead), and every new-window call sleeps
+# for the given duration before succeeding. That sleep happens while
 # bin/fm-spawn.sh's fresh-spawn task-set lock is still held (its release sits
 # near the end of the script, after launch), simulating the real slow harness
-# launch (evidence: ~62s) long enough for a concurrently forked sibling
-# relaunch to actually race the same lock, the way two dead local secondmates
-# do in one sweep pass. Per-window .killed sentinels mirror
-# make_liveness_tmux's present/absent toggle so each id's own kill-then-relaunch
-# sequence reads correctly regardless of the other id's timing.
+# launch (evidence: ~62s) long enough for the other concurrently forked
+# sibling relaunches to actually queue behind the same lock, the way three or
+# more dead local secondmates do in one sweep pass. Per-window .killed
+# sentinels mirror make_liveness_tmux's present/absent toggle so each id's own
+# kill-then-relaunch sequence reads correctly regardless of the other ids'
+# timing.
 make_concurrent_relaunch_tmux() {
   local dir=$1 sleep_secs=$2 fakebin
   fakebin=$(fm_fakebin "$dir")
@@ -547,13 +548,13 @@ case "\${1:-}" in
     for a in "\$@"; do case "\$a" in *pane_current_command*) printf '%s\n' zsh; exit 0 ;; esac; done
     exit 0 ;;
   list-windows)
-    for w in fm-smconc1 fm-smconc2; do
+    for w in fm-smconc1 fm-smconc2 fm-smconc3; do
       [ -e "\${FM_TMUX_CALL_LOG:?}.\$w.killed" ] || printf '%s\n' "\$w"
     done
     exit 0 ;;
   new-window|kill-window)
     printf '%s\n' "\$*" >> "\${FM_TMUX_CALL_LOG:?}"
-    for w in fm-smconc1 fm-smconc2; do
+    for w in fm-smconc1 fm-smconc2 fm-smconc3; do
       case "\$*" in
         *"\$w"*)
           if [ "\${1:-}" = kill-window ]; then
@@ -574,35 +575,41 @@ SH
   printf '%s\n' "$fakebin"
 }
 
-# Regression for the 2026-09-23 evidence: two local secondmates read dead in
-# the same sweep pass. secondmate_liveness_sweep forks both fresh-spawn
-# relaunches concurrently (bootstrap_parallel_spawn does not space local
-# items), and each fm-spawn.sh holds the home's fresh-spawn task-set lock for
-# its whole launch. Before the fix, the second relaunch to reach the lock lost
-# the race and refused outright, misattributing the holder to "a forced
-# teardown". After the fix it waits (bounded) on that sibling relaunch
-# instead, and both secondmates come back. (Distinctive ids, not the shared
-# sm1/sm2 fixture ids, so this test's deterministic /tmp/fm-<id> staging root
-# cannot collide with another test's.)
+# Regression for the 2026-09-23 evidence: three local secondmates read dead in
+# the same sweep pass. secondmate_liveness_sweep forks every fresh-spawn
+# relaunch concurrently (bootstrap_parallel_spawn does not space local items),
+# and each fm-spawn.sh holds the home's fresh-spawn task-set lock for its
+# whole launch. Before the fix, every relaunch but the first to reach the lock
+# lost the race and refused outright, misattributing the holder to "a forced
+# teardown". After the fix each queued relaunch waits (bounded, per holder) on
+# whichever sibling currently holds the lock, so a third relaunch queued
+# behind two prior holders still succeeds instead of exhausting a single
+# total-wait bound. All three secondmates come back, with no
+# FM_SPAWN_TASK_SET_LOCK_WAIT_SECONDS override needed since the fixed 90s
+# per-holder bound comfortably covers this fake launch's short holds.
+# (Distinctive ids, not the shared sm1/sm2 fixture ids, so this test's
+# deterministic /tmp/fm-<id> staging root cannot collide with another test's.)
 test_sweep_concurrent_local_relaunches_do_not_race_task_set_lock() {
   local w fb tmuxfb log out
   w=$(new_world sweep-concurrent-relaunch)
   add_sm_home "$w" smconc1 firstmate:fm-smconc1
   add_sm_home "$w" smconc2 firstmate:fm-smconc2
+  add_sm_home "$w" smconc3 firstmate:fm-smconc3
   fb=$(make_toolchain "$w"); tmuxfb=$(make_concurrent_relaunch_tmux "$w" 1)
   log="$w/calls.log"; : > "$log"
 
   out=$(PATH="$tmuxfb:$fb:$BASE_PATH" TMUX='' FM_BACKEND=tmux FM_HOME="$w/home" \
-    FM_TMUX_CALL_LOG="$log" FM_SPAWN_TASK_SET_LOCK_WAIT_SECONDS=5 \
+    FM_TMUX_CALL_LOG="$log" \
     "$ROOT/bin/fm-bootstrap.sh" 2>&1)
 
   assert_not_contains "$out" "task set is locked" \
-    "two concurrent local fresh-spawn relaunches in one sweep must not make each other fail on the home task-set lock"
+    "three concurrent local fresh-spawn relaunches in one sweep must not make each other fail on the home task-set lock"
   assert_not_contains "$out" "respawn failed" \
-    "both dead local secondmates should relaunch successfully out of one sweep pass"
+    "all three dead local secondmates should relaunch successfully out of one sweep pass"
   assert_contains "$(grep new-window "$log")" "fm-smconc1" "smconc1 should have been relaunched"
   assert_contains "$(grep new-window "$log")" "fm-smconc2" "smconc2 should have been relaunched"
-  pass "sweep: two concurrent local fresh-spawn relaunches in one pass do not race the home task-set lock"
+  assert_contains "$(grep new-window "$log")" "fm-smconc3" "smconc3 should have been relaunched"
+  pass "sweep: three concurrent local fresh-spawn relaunches in one pass do not race the home task-set lock"
 }
 
 test_sweep_noop_with_no_secondmate_meta() {
