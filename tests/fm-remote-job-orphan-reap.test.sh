@@ -177,7 +177,6 @@ rm -rf "$CASE1/remote-jobs"
 kill -KILL "$SERVE" 2>/dev/null || true
 wait_gone "$SERVE" 10 || fail "the recorded serving child did not stop"
 alive "$WORKER" || fail "the fixture supervisor did not survive a lone child kill, so this case no longer covers the leak"
-wait_child "$WORKER" 15 || fail "the supervisor did not respawn after its recorded child pid was killed"
 pass "removing the state root and killing the recorded worker pid leaves the tree running, orphaned"
 
 # A worker whose code root is intact is never a reap candidate, which is what
@@ -188,7 +187,7 @@ alive "$WORKER" || fail "the reaper stopped a worker whose code root still exist
 pass "a worker whose code root still exists is never reaped"
 
 # Prune the code root the way a returned worktree does.
-SURVIVOR=$(pgrep -P "$WORKER" | head -n 1)
+SURVIVOR=$(wait_serve "$CASE1/remote-root" 15) || fail "the supervisor did not respawn after its recorded child pid was killed"
 rm -rf "$CASE1/remote-root"
 wait_gone "$WORKER" 60 || fail "the worker survived its code root being pruned"
 wait_gone "$SURVIVOR" 60 || fail "a serving child outlived the abandoned supervisor"
