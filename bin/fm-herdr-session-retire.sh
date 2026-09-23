@@ -154,7 +154,7 @@ fm_herdr_retire_stop() { # <session>
     return 1
   }
   running=$(printf '%s' "$sessions" | jq -r --arg name "$name" \
-    '[.sessions[]? | select(.name == $name) | .running] | if length == 1 then .[0] else "absent" end' 2>/dev/null)
+    '[.sessions[]? | select(.name == $name) | .running] | if length == 1 then .[0] else "absent" end' 2>/dev/null) || running=
   [ "$running" = false ] || {
     fm_herdr_retire_error "'$name' did not report stopped after the stop call (running=${running:-<unreadable>})"
     return 1
