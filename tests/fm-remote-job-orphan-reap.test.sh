@@ -61,6 +61,24 @@ wait_child() { # <pid> <seconds>
   return 1
 }
 
+# <root> <seconds> - echoes the real --serve process's pid once it exists.
+# The Linux start path's own startup runs several command substitutions
+# (platform detection, home and root canonicalization, state preparation)
+# before it forks its long-lived --serve child; each of those is itself a
+# real, short-lived child of the worker. A bare "first child of worker" pgrep
+# can catch one of those instead of the --serve process and find it already
+# exited by the next line, so this matches the exact --serve command line
+# the same way start_worker() already matches the worker's own.
+wait_serve() { # <root> <seconds>
+  local root=$1 deadline=$(( $(date +%s) + $2 )) found
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    found=$(pgrep -f "^/bin/bash $root/bin/fm-remote-job-worker.sh --serve\$" | head -n 1)
+    case "$found" in ''|*[!0-9]*) ;; *) printf '%s\n' "$found"; return 0 ;; esac
+    sleep 0.1
+  done
+  return 1
+}
+
 # True when <pid>'s parent is a reaper for orphaned processes: init itself, or
 # a subreaper systemd registers one hop below init (PR_SET_CHILD_SUBREAPER,
 # e.g. `systemd --user`) - a live host's per-user manager adopts orphans there
@@ -138,8 +156,7 @@ build_remote_root "$CASE1/remote-root"
 WORKER=$(start_worker "$CASE1/remote-root" "$CASE1/account" "$CASE1/remote-jobs") ||
   fail "could not start the fixture remote job worker"
 track "$WORKER"
-wait_child "$WORKER" 10 || fail "the fixture worker never started its serving child"
-SERVE=$(pgrep -P "$WORKER" | head -n 1)
+SERVE=$(wait_serve "$CASE1/remote-root" 10) || fail "the fixture worker never started its serving child"
 
 [ "$(pgid_of "$WORKER")" = "$WORKER" ] ||
   fail "the started worker is not its own process group leader, so its tree cannot be signalled as one group"
