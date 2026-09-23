@@ -1244,14 +1244,11 @@ spawn_abort_cleanup() {
     fm_lock_release "$SPAWN_META_LOCK" || true
   fi
   # A spawn that aborts after claiming its slot but before its record survives
-  # must not leave a claim naming a task no record describes: since spawn now
-  # refuses a slot whose claim names another live task (the `other` guard
-  # above), a stale claim left behind here would block every later spawn
-  # Treehouse hands this slot to until an operator deletes the claim file by
-  # hand. The release is a read-then-remove, so it needs the project lock that
-  # guards the claim; if launch already released that lock (metadata published,
-  # abort after), reacquire it here for just the release. The release itself
-  # never removes another task's claim.
+  # must not leave a claim naming a task no record describes. The release is a
+  # read-then-remove, so it needs the project lock that guards the claim; if
+  # launch already released that lock (metadata published, abort after),
+  # reacquire it here for just the release. The release itself never removes
+  # another task's claim.
   if [ "$SPAWN_SLOT_CLAIMED" = 1 ] && [ -n "${WT:-}" ] &&
     [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ] &&
     fm_treehouse_pool_slot "$PROJ_ABS" "$WT"; then
