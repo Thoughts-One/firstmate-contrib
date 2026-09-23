@@ -1045,12 +1045,13 @@ test_promoted_scout_relaunch_receives_the_current_delivery_contract() {
       echo "project=$dir/proj"
       echo "harness=claude"
       echo "kind=scout"
-      echo "tasktmp=/tmp/fm-$id"
+      echo "tasktmp=/tmp/fm-$(id -u)-$id"
       echo "model=default"
       echo "effort=default"
     } > "$home/state/$id.meta"
     printf '%s\n' "fm-$id" > "$dir/fake/windows"
     printf '%s' "$dir/wt" > "$dir/fake/cwd"
+    TASK_TMPS+=("/tmp/fm-$(id -u)-$id")
 
     out=$(FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" \
       "$PROMOTE" "$id" --mode "$mode" --yolo off 2>&1) \

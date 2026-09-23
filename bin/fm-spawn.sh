@@ -4008,14 +4008,7 @@ esac
 # else, then tightened, so no other local user can plant or swap a file in it. The
 # staged launch command lives in a sibling directory namespaced by home identity,
 # not in this shared per-id root.
-FM_SPAWN_UID=$(id -u 2>/dev/null) || FM_SPAWN_UID=
-case "$FM_SPAWN_UID" in
-  '' | *[!0-9]*)
-    echo "error: could not determine this account's numeric user id; refusing to build a private task temp root" >&2
-    exit 1
-    ;;
-esac
-TASK_TMP="/tmp/fm-$FM_SPAWN_UID-$ID"
+TASK_TMP="/tmp/fm-$(id -u)-$ID"
 if ! (umask 077 && mkdir "$TASK_TMP") 2>/dev/null; then
   if [ -L "$TASK_TMP" ] || [ ! -d "$TASK_TMP" ] || [ ! -O "$TASK_TMP" ] ||
     [ -n "$(find "$TASK_TMP" -prune \( -perm -g=w -o -perm -o=w \) -print 2>/dev/null)" ] ||
