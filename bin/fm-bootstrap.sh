@@ -1659,6 +1659,28 @@ fi
 local_phase && detect_local_config
 
 if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
+  # config/ssh-launch-stagger-host is read and validated here, before any
+  # network sweep starts (including the fleet_sync clone-refresh fork right
+  # below), so a malformed file exits before anything is left running
+  # unwaited and unlocked.
+  if network_phase; then
+    if ! BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT=$(fm_config_source_present "$CONFIG/ssh-launch-stagger-host"); then
+      exit 1
+    fi
+    if [ "$BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT" = 1 ]; then
+      if [ ! -f "$CONFIG/ssh-launch-stagger-host" ] || [ ! -r "$CONFIG/ssh-launch-stagger-host" ]; then
+        echo "error: config/ssh-launch-stagger-host must be a readable regular file" >&2
+        exit 1
+      fi
+      BOOTSTRAP_STAGGER_HOST=$(cat "$CONFIG/ssh-launch-stagger-host") || exit 1
+      case "$BOOTSTRAP_STAGGER_HOST" in
+        ''|*[[:space:][:cntrl:]]*)
+          echo "error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace" >&2
+          exit 1
+          ;;
+      esac
+    fi
+  fi
   # secondmate_sync consumes SECONDMATE_RESPAWNED_IDS from the liveness sweep, so
   # those two always run together in the same phase. Clone refresh does not
   # depend on them, so it starts in the background and overlaps their wall clock.
@@ -1680,22 +1702,6 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
     fi
   fi
   if network_phase; then
-    if ! BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT=$(fm_config_source_present "$CONFIG/ssh-launch-stagger-host"); then
-      exit 1
-    fi
-    if [ "$BOOTSTRAP_STAGGER_HOST_CONFIG_PRESENT" = 1 ]; then
-      if [ ! -f "$CONFIG/ssh-launch-stagger-host" ] || [ ! -r "$CONFIG/ssh-launch-stagger-host" ]; then
-        echo "error: config/ssh-launch-stagger-host must be a readable regular file" >&2
-        exit 1
-      fi
-      BOOTSTRAP_STAGGER_HOST=$(cat "$CONFIG/ssh-launch-stagger-host") || exit 1
-      case "$BOOTSTRAP_STAGGER_HOST" in
-        ''|*[[:space:][:cntrl:]]*)
-          echo "error: config/ssh-launch-stagger-host must contain one non-empty host value without whitespace" >&2
-          exit 1
-          ;;
-      esac
-    fi
     if network_sweep_authorized 'dead-secondmate relaunch'; then
       __fm_timing_stamp=$(fm_timing_now_ms)
       secondmate_liveness_sweep

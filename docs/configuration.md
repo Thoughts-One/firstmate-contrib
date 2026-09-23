@@ -401,7 +401,7 @@ When it is present, `bin/fm-bootstrap.sh` spaces repeated launches bound for tha
 Every other host, and every local launch, still fires immediately and runs exactly as before.
 When the file is absent, no staggering happens at all, which is the unchanged default for every installation that does not create the file.
 There is no environment-variable override; the setting is file-only.
-Malformed or unreadable values refuse the bootstrap run before it starts.
+Malformed or unreadable values refuse the network sweeps of that bootstrap run, before any of them starts.
 The setting only matters in a home that owns live secondmates of its own, since a secondmate home never contains one; it is not part of the inherited-configuration contract.
 `bin/fm-bootstrap.sh`'s header owns the exact spacing mechanism.
 
