@@ -1,0 +1,18 @@
+respawn 1 | killed serve=1393141
+  OLD first-child pid=1394083 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1396799 cmd=[/bin/bash <tmp>/r1/bin/fm-remote-job-worker.sh --serve]
+respawn 2 | killed serve=1399074
+  OLD first-child pid=1399908 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1402349 cmd=[/bin/bash <tmp>/r2/bin/fm-remote-job-worker.sh --serve]
+respawn 3 | killed serve=1404064
+  OLD first-child pid=1404493 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1407512 cmd=[/bin/bash <tmp>/r3/bin/fm-remote-job-worker.sh --serve]
+respawn 4 | killed serve=1409131
+  OLD first-child pid=1409714 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1412331 cmd=[/bin/bash <tmp>/r4/bin/fm-remote-job-worker.sh --serve]
+respawn 5 | killed serve=1413999
+  OLD first-child pid=1414528 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1417028 cmd=[/bin/bash <tmp>/r5/bin/fm-remote-job-worker.sh --serve]
+respawn 6 | killed serve=1419379
+  OLD first-child pid=1420756 cmd=[sleep 1] alive-later=GONE
+  NEW wait_serve  pid=1423542 cmd=[/bin/bash <tmp>/r6/bin/fm-remote-job-worker.sh --serve]

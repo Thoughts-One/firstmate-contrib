@@ -1,0 +1,5 @@
+start 1 child pid=1453605 cmd=[/bin/bash <tmp>/r1/bin/fm-remote-job-worker.sh --serve]
+start 2 child pid=1454947 cmd=[/bin/bash <tmp>/r2/bin/fm-remote-job-worker.sh --serve]
+start 3 child pid=1455940 cmd=[/bin/bash <tmp>/r3/bin/fm-remote-job-worker.sh --serve]
+start 4 child pid=1456925 cmd=[/bin/bash <tmp>/r4/bin/fm-remote-job-worker.sh --serve]
+start 5 child pid=1458006 cmd=[/bin/bash <tmp>/r5/bin/fm-remote-job-worker.sh --serve]
