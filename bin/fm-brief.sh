@@ -32,9 +32,8 @@
 #   omitting both still fails loudly so an accidental omission is never silent.
 #   Set FM_SECONDMATE_CHARTER='<charter>' to fill the charter text.
 #   Set FM_SECONDMATE_SCOPE='<scope>' to write a routing scope distinct from the charter text.
-#   --herdr-lab is mandatory when the task will provision and drive a generated,
-#   Firstmate-created verification session. It adds the hard isolation contract
-#   backed by bin/fm-herdr-lab.sh.
+#   --herdr-lab is mandatory when the task will issue Herdr lifecycle commands.
+#   It adds the hard isolation contract backed by bin/fm-herdr-lab.sh.
 #   --herdr-retire-session <name> is mandatory instead when the task's only Herdr
 #   lifecycle action is guardedly stopping one explicitly named, pre-existing
 #   session Firstmate did not provision. It adds the hard retirement contract
@@ -433,8 +432,8 @@ else
 IFS= read -r -d '' HERDR_SECTION <<'EOF' || true
 # Herdr lifecycle declaration - NOT ENABLED
 **HARD SAFETY GATE:** this scaffold cannot inspect the task text filled in above.
-If the task will provision and drive a generated verification session, stop and regenerate the brief with `--herdr-lab` before dispatch.
-If the task will instead stop one explicitly named, pre-existing session Firstmate did not provision, stop and regenerate the brief with `--herdr-retire-session <name>` before dispatch.
+If the task will start, stop, delete, restart, profile, or otherwise drive Herdr lifecycle behavior, stop and regenerate the brief with `--herdr-lab` before dispatch.
+If the task's only Herdr lifecycle action is stopping one explicitly named, pre-existing session Firstmate did not provision, stop and regenerate the brief with `--herdr-retire-session <name>` before dispatch instead.
 Do not add Herdr lifecycle commands to this unguarded brief by hand.
 EOF
 HERDR_SECTION=${HERDR_SECTION%$'\n'}

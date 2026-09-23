@@ -347,7 +347,7 @@ Tests use thin compatibility wrappers in `tests/herdr-test-safety.sh` and never 
 ## Existing-session retirement safety
 
 `bin/fm-herdr-session-retire.sh <session>` is the separate, sole supported owner for guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
-It never adopts a generated `fm-lab-*` session; `fm-herdr-lab.sh` structurally rejects those names, and this helper equally refuses them, routing the caller back to `fm-herdr-lab.sh teardown` instead.
+It never adopts a generated `fm-lab-*` session; `fm-herdr-lab.sh` operates only on the `fm-lab-*` sessions it generated itself and refuses to adopt an existing one, and this helper equally refuses every `fm-lab-*` name, routing the caller back to `fm-herdr-lab.sh teardown` instead.
 Retirement means stop-only: the helper never deletes a session, starts a server, restarts anything, or touches project clones.
 
 It requires the exact target argument (no ambient-only `HERDR_SESSION` selection), refuses the literal `default`, the literal `fm-remote`, and every `fm-lab-*` name, and requires exactly one matching session row with `default:false` and `running:true`.
