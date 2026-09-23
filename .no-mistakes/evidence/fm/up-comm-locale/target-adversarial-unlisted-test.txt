@@ -1,0 +1,3 @@
+=== target copy + unlisted tests/zz-unlisted-locale-probe.test.sh, LC_ALL=en_US.utf8
+FM_TEST_COVERAGE ok total=225 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=185 serial_shards=9 serial_unhinted=8 herdr=16
+exit=0

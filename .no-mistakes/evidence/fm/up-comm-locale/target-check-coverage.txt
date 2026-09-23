@@ -1,0 +1,18 @@
+=== target 0466ff9: LC_ALL=C bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=224 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=184 serial_shards=9 serial_unhinted=7 herdr=16
+exit=
+=== target 0466ff9: LC_ALL=en_US.utf8 bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=224 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=184 serial_shards=9 serial_unhinted=7 herdr=16
+exit=
+=== target 0466ff9: LC_ALL=en_GB.utf8 bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=224 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=184 serial_shards=9 serial_unhinted=7 herdr=16
+exit=
+=== target 0466ff9: LC_ALL=de_DE.utf8 bin/fm-test-run.sh --check-coverage
+bin/fm-test-run.sh: line 1092: warning: setlocale: LC_ALL: cannot change locale (de_DE.utf8): No such file or directory
+bin/fm-test-run.sh: line 1093: warning: setlocale: LC_ALL: cannot change locale (de_DE.utf8): No such file or directory
+bin/fm-test-run.sh: line 852: warning: setlocale: LC_ALL: cannot change locale (de_DE.utf8): No such file or directory
+bash: warning: setlocale: LC_ALL: cannot change locale (de_DE.utf8): No such file or directory
+FM_TEST_COVERAGE ok total=224 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=184 serial_shards=9 serial_unhinted=7 herdr=16
+exit=
+target en_US.utf8 exit=0
+target C exit=0

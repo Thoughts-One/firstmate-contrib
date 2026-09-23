@@ -1,0 +1,5 @@
+=== target copy + ghost proven-isolated entry tests/FM_Zz-ghost-proven.test.sh, LC_ALL=en_US.utf8
+fm-test-run: coverage guard: portable shards must equal the proven-isolated set
+fm-test-run: missing from shards:
+tests/FM_Zz-ghost-proven.test.sh
+exit=1

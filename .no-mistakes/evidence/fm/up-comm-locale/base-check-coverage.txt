@@ -1,0 +1,7 @@
+=== base 9296f9b: LC_ALL=C bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=224 parallel=24 parallel_max_ms=417163 parallel_imbalance_ms=2894 parallel_unhinted=0 serial=184 serial_shards=9 serial_unhinted=7 herdr=16
+exit=0
+=== base 9296f9b: LC_ALL=en_US.utf8 bin/fm-test-run.sh --check-coverage
+comm: file 2 is not in sorted order
+comm: input is not in sorted order
+exit=1
