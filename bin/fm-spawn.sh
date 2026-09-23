@@ -1244,12 +1244,14 @@ spawn_abort_cleanup() {
     fm_lock_release "$SPAWN_META_LOCK" || true
   fi
   # A spawn that aborts after claiming its slot but before its record survives
-  # must not leave a claim naming a task no record describes. The release is a
-  # read-then-remove, so it runs only while the project lock that wrote the
-  # claim is still held (aborts before metadata publication); a later abort has
-  # already released that lock and leaves the claim for the next spawn's
-  # atomic replacement rather than racing it. The release itself never removes
-  # another task's claim.
+  # must not leave a claim naming a task no record describes: since spawn now
+  # refuses a slot whose claim names another live task (the `other` guard
+  # above), a stale claim left behind here would block every later spawn
+  # Treehouse hands this slot to until an operator deletes the claim file by
+  # hand. The release is a read-then-remove, so it needs the project lock that
+  # guards the claim; if launch already released that lock (metadata published,
+  # abort after), reacquire it here for just the release. The release itself
+  # never removes another task's claim.
   if [ "$SPAWN_SLOT_CLAIMED" = 1 ] && [ -n "${WT:-}" ] &&
     [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ] &&
     fm_treehouse_pool_slot "$PROJ_ABS" "$WT"; then
@@ -1257,7 +1259,9 @@ spawn_abort_cleanup() {
     if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
       fm_treehouse_slot_owner_release "$WT" "$ID" || true
     else
-      echo "warning: leaving task $ID's slot claim on $WT in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it" >&2
+      fm_lock_acquire_wait "$SPAWN_TREEHOUSE_PROJECT_LOCK"
+      fm_treehouse_slot_owner_release "$WT" "$ID" || true
+      fm_lock_release "$SPAWN_TREEHOUSE_PROJECT_LOCK" || true
     fi
   fi
   if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
@@ -3948,12 +3952,12 @@ elif [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
     fm_treehouse_slot_owner_state "$WT" "$ID"
     case "$FM_TREEHOUSE_SLOT_OWNER" in
       other)
-        echo "error: Treehouse handed back pool slot $WT, but its slot-owner claim still names task $FM_TREEHOUSE_SLOT_OWNER_ID${FM_TREEHOUSE_SLOT_OWNER_HOME:+ (home $FM_TREEHOUSE_SLOT_OWNER_HOME)}, not $ID; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh $FM_TREEHOUSE_SLOT_OWNER_ID), then re-run spawn." >&2
+        echo "error: Treehouse handed back pool slot $WT, but its slot-owner claim still names task $FM_TREEHOUSE_SLOT_OWNER_ID${FM_TREEHOUSE_SLOT_OWNER_HOME:+ (home $FM_TREEHOUSE_SLOT_OWNER_HOME)}, not $ID; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh $FM_TREEHOUSE_SLOT_OWNER_ID), then re-run spawn; inspect window $T" >&2
         exit 1
         ;;
       unsafe)
         SPAWN_SLOT_MARKER=$(fm_treehouse_slot_owner_marker "$WT" 2>/dev/null) || SPAWN_SLOT_MARKER="beside $WT"
-        echo "error: Treehouse pool slot $WT carries a slot-owner claim that cannot be read, so it cannot be proved free of another task; refusing to claim it. Inspect or repair the claim file at $SPAWN_SLOT_MARKER (task= and home= lines), then re-run spawn." >&2
+        echo "error: Treehouse pool slot $WT carries a slot-owner claim that cannot be read, so it cannot be proved free of another task; refusing to claim it. Inspect or repair the claim file at $SPAWN_SLOT_MARKER (task= and home= lines), then re-run spawn; inspect window $T" >&2
         exit 1
         ;;
     esac
