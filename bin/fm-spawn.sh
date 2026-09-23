@@ -126,10 +126,10 @@
 #   creation through metadata publication, so concurrent same-id spawns serialize
 #   even when they select different backends. A fresh spawn first takes the
 #   per-home task-set lock: it refuses immediately when forced teardown owns
-#   it, but waits (bounded, ~90s) for a sibling fresh spawn instead, so two or
-#   more concurrent fresh secondmate relaunches (bin/fm-bootstrap.sh's local
-#   liveness sweep) cannot make each other fail; relaunch is exempt because
-#   the existing task's control lock covers it.
+#   it, but waits (bounded, 90s per holder) for a sibling fresh spawn instead,
+#   so two or more concurrent fresh secondmate relaunches (bin/fm-bootstrap.sh's
+#   local liveness sweep) cannot make each other fail; relaunch is exempt
+#   because the existing task's control lock covers it.
 #   A fresh Treehouse-backed spawn also takes the project-identity lock in the local
 #   root Firstmate home's state directory before slot allocation and holds it through
 #   task metadata publication. Teardown holds that same lock while proving and
