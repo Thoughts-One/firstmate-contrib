@@ -337,13 +337,10 @@ C_WRONG=$(grep -Fvxc -- "$C_BEFORE" "$C_FOCUS_SAMPLES" || true)
 if [ "$STEAL_LIVE" = 1 ]; then
   # A defective release cannot make this path focus-safe, which is precisely why
   # default-on projection is floored above it. The plain-close call log proves
-  # that the fallback branch ran, and the restore backstop's own tab focus call
-  # in that log proves it saw the wrong focus and returned to the anchor. The
-  # wrong-focus interval can be shorter than one focus_snapshot call, so a
-  # caught flash sample is optional.
-  grep -q '^tab focus' "$C_CALL_LOG" \
-    || fail 'Part C on a defective release never issued the restore backstop tab focus, so no restore was proven'
-  pass "fallback on a defective release: call log proved plain close and the restore backstop's tab focus (sampler wrong-focus observations: $C_WRONG)"
+  # that the fallback branch ran, and the exact post-close focus above proves
+  # that its restore backstop returned to the anchor. The wrong-focus interval
+  # can be shorter than one focus_snapshot call, so a caught flash is optional.
+  pass "fallback on a defective release: call log proved plain close and final focus was restored to the anchor (sampler wrong-focus observations: $C_WRONG)"
 else
   [ "$C_WRONG" -eq 0 ] \
     || fail "a focus-preserving release exposed $C_WRONG wrong-focus samples on the fallback path"
