@@ -1,0 +1,7 @@
+#!/bin/sh
+exec 0<&-
+exit 0
+#!/bin/sh
+exec 0<&-
+echo "encoder closed stdin early" >&2
+exit 3
