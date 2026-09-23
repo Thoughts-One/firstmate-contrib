@@ -1088,6 +1088,26 @@ test_portable_shard_union_and_coverage_guard() {
   pass "portable shard union, disjointness, and coverage guard hold"
 }
 
+# The guard's partition lists are sorted with LC_ALL=C, but comm itself must
+# also run under LC_ALL=C: comparing an ambient-locale collation against a
+# C-collated sort order makes comm reject the input as unsorted, so the guard
+# must keep passing under whatever locale the runner's caller has set.
+test_coverage_guard_tolerates_a_non_c_locale() {
+  local candidate loc="" out
+  command -v locale >/dev/null 2>&1 || { echo "skip: locale not found"; return 0; }
+  for candidate in en_US.UTF-8 en_US.utf8 en_GB.UTF-8 en_GB.utf8 de_DE.UTF-8 de_DE.utf8; do
+    if locale -a 2>/dev/null | grep -Fxq "$candidate"; then
+      loc="$candidate"
+      break
+    fi
+  done
+  [ -n "$loc" ] || { echo "skip: no non-C UTF-8 locale installed to exercise the guard under"; return 0; }
+  out=$(LC_ALL="$loc" LANG="$loc" "$RUNNER" --check-coverage 2>&1) \
+    || fail "coverage guard failed under LC_ALL=$loc: $out"
+  assert_contains "$out" "FM_TEST_COVERAGE ok" "coverage guard success marker under a non-C locale"
+  pass "coverage guard succeeds under a non-C locale ($loc)"
+}
+
 # The two parallel lanes are only "duration-balanced" while every member has a
 # measured hint and the packing over those hints stays even. Both halves went
 # unchecked until one lane grew past its CI job cap and was cancelled on every
@@ -1761,6 +1781,7 @@ test_exclude_family
 test_list_scheduled_proven_isolated_uses_serial_weights
 test_list_scheduled_non_lane_selections_use_serial_weights
 test_portable_shard_union_and_coverage_guard
+test_coverage_guard_tolerates_a_non_c_locale
 test_portable_parallel_lanes_stay_duration_balanced
 test_portable_serial_shards_partition_the_serial_lane
 test_portable_serial_hint_coverage_is_reported_and_bounded
