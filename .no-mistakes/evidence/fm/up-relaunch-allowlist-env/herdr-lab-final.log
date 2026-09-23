@@ -1,0 +1,58 @@
+lab session: fm-lab-lenv-3928847-16710
+--- A worker env ---
+FM_LAB_ALLOWED=stale-pane-value
+FM_LAB_EMPTY=stale-pane-value
+FM_LAB_UNSET=stale-pane-value
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - A: ordinary worker FM_LAB_ALLOWED expands from the destination pane (unchanged behavior)
+PASS - A: non-allowlisted ambient name is filtered
+PASS - A: no launch-env snapshot for an ordinary worker
+PASS - A: launcher value never appears in the pane text
+--- B secondmate env ---
+FM_LAB_ALLOWED=launcher-sm-secret-B1 $(touch /tmp/fm-lenv-lab.EepJ0C/PWNED) "q"
+FM_LAB_EMPTY=
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - B: secondmate receives the launcher's allowlisted value verbatim
+PASS - B: empty launcher value stays empty (pane stale value ignored)
+PASS - B: launcher-unset name stays unset despite stale pane value
+PASS - B: non-allowlisted name filtered
+PASS - B: value is data, not code (no command substitution executed)
+PASS - B: one-launch snapshot removed after the secondmate started
+PASS - B: launcher value never appears in the secondmate pane text
+--- C restarted secondmate env ---
+FM_LAB_ALLOWED=launcher-restart-value-C2
+FM_LAB_EMPTY=<unset>
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - C: restarted secondmate sees the fresh launcher value
+PASS - C: name now unset in launcher is unset in the restarted secondmate (no stale carry-over)
+--- E secondmate env ---
+FM_LAB_ALLOWED=<unset>
+FM_LAB_EMPTY=<unset>
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - E: leftover credential was not loaded into the restarted secondmate
+PASS - E: stale leftover snapshot deleted when nothing was captured
+D secondmate meta traceparent=00-4eb6e123a53ff96e06f1413f4e770857-838a85cf6f2797cb-01 launcher TRACEPARENT=00-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-ffffffffffffffff-01
+--- D secondmate env ---
+FM_LAB_ALLOWED=launcher-tp-value
+FM_LAB_EMPTY=<unset>
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=00-4eb6e123a53ff96e06f1413f4e770857-838a85cf6f2797cb-01
+PASS - D: local secondmate receives the recorded carrier, not the launcher's allowlisted TRACEPARENT
+PASS - D: other allowlisted launcher value still delivered
+--- D ordinary env ---
+FM_LAB_ALLOWED=stale-pane-value
+FM_LAB_EMPTY=stale-pane-value
+FM_LAB_UNSET=stale-pane-value
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=00-e86ff2d908d6d3f30e35d25d1c5914b0-61691e7ae4a04d4a-01
+PASS - D: ordinary worker receives its recorded carrier with TRACEPARENT allowlisted
+PASS - D: ordinary worker still expands other allowlisted names from the pane
+RESULT failed=0

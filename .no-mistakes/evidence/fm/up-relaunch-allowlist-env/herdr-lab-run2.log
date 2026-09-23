@@ -1,0 +1,50 @@
+lab session: fm-lab-lenv-3720839-10169
+--- A worker env ---
+FM_LAB_ALLOWED=launcher-ordinary-secret-A1
+FM_LAB_EMPTY=
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+FAIL - A: ordinary worker FM_LAB_ALLOWED not from pane
+PASS - A: non-allowlisted ambient name is filtered
+PASS - A: no launch-env snapshot for an ordinary worker
+PASS - A: launcher value never appears in the pane text
+--- B secondmate env ---
+FM_LAB_ALLOWED=launcher-sm-secret-B1 $(touch /tmp/fm-lenv-lab.f9h1vB/PWNED) "q"
+FM_LAB_EMPTY=
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - B: secondmate receives the launcher's allowlisted value verbatim
+PASS - B: empty launcher value stays empty (pane stale value ignored)
+PASS - B: launcher-unset name stays unset despite stale pane value
+PASS - B: non-allowlisted name filtered
+PASS - B: value is data, not code (no command substitution executed)
+PASS - B: one-launch snapshot removed after the secondmate started
+PASS - B: launcher value never appears in the secondmate pane text
+--- C restarted secondmate env ---
+FM_LAB_ALLOWED=launcher-restart-value-C2
+FM_LAB_EMPTY=<unset>
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>
+PASS - C: restarted secondmate sees the fresh launcher value
+PASS - C: name now unset in launcher is unset in the restarted secondmate (no stale carry-over)
+D secondmate meta traceparent=00-31c896987b3db912083ff47528a4b236-bf143e2a4d8abfff-01 launcher TRACEPARENT=00-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-ffffffffffffffff-01
+--- D secondmate env ---
+FM_LAB_ALLOWED=launcher-tp-value
+FM_LAB_EMPTY=<unset>
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=00-31c896987b3db912083ff47528a4b236-bf143e2a4d8abfff-01
+PASS - D: local secondmate receives the recorded carrier, not the launcher's allowlisted TRACEPARENT
+PASS - D: other allowlisted launcher value still delivered
+/home/kai/.no-mistakes/evidence/01M372WA767FTPS4HYJMNHEV1G/herdr-lab-launch-env.sh: line 134: /tmp/fm-lenv-lab.f9h1vB/primary-home/data/lenvcm2/brief.md: No such file or directory
+--- D ordinary env ---
+FM_LAB_ALLOWED=launcher-ordinary-secret-A1
+FM_LAB_EMPTY=
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=00-13814e62831ce51b6217a66950199d82-7a82588133b4276a-01
+PASS - D: ordinary worker receives its recorded carrier with TRACEPARENT allowlisted
+RESULT failed=1

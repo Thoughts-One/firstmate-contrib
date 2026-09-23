@@ -1,0 +1,2 @@
+warning: secondmate lenvsm sync skipped before launch: primary default-branch commit cannot be resolved
+spawned lenvsm harness=sh kind=secondmate mode=secondmate yolo=off window=fm-lab-lenv-3928847-16710:w4:p2 worktree=/tmp/fm-lenv-lab.EepJ0C/secondmate-home

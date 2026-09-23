@@ -1,0 +1,5 @@
+FM_LAB_ALLOWED=launcher-sm-secret-B1 $(touch /tmp/fm-lenv-lab.EepJ0C/PWNED) "q"
+FM_LAB_EMPTY=
+FM_LAB_UNSET=<unset>
+FM_LAB_AMBIENT=<unset>
+TRACEPARENT=<unset>

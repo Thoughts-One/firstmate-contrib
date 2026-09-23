@@ -1,0 +1,2 @@
+warning: /tmp/fm-lenv-lab.EepJ0C/primary-home/data/lenvcm/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+spawned lenvcm harness=sh kind=ship mode=no-mistakes yolo=off window=fm-lab-lenv-3928847-16710:w1:p2 worktree=/home/kai/.treehouse/proj-5b8c96/1/proj

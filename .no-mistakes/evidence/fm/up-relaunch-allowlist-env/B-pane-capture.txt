@@ -1,0 +1,11 @@
+
+/tmp/fm-lenv-lab.EepJ0C/secondmate-home
+❯ export GOTMPDIR=/tmp/fm-lenvsm/gotmp
+
+/tmp/fm-lenv-lab.EepJ0C/secondmate-home
+❯ export COMPACT_ADVISER_DISABLE=1
+
+/tmp/fm-lenv-lab.EepJ0C/secondmate-home
+❯ . '/tmp/fm-lenvsm+5a96c7b3c1140d2dc893ab1749600d03490004050559d581b01ccacd7d57e567/launch.s1790166670.3943151.13214.sh
+'
+probe-done

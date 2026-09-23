@@ -1,0 +1,21 @@
+treehouse get
+
+proj master
+❯ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-5b8c96/1/proj. Type 'exit' to return.
+
+proj HEAD
+❯ export GOTMPDIR=/tmp/fm-lenvcm/gotmp
+
+proj HEAD
+❯ export COMPACT_ADVISER_DISABLE=1
+export FM_TASK_ID=lenvcm
+
+proj HEAD
+❯ export FM_TASK_ID=lenvcm
+
+proj HEAD
+❯ . '/tmp/fm-lenvcm+5a96c7b3c1140d2dc893ab1749600d03490004050559d581b01ccacd7d57e567/launch.s1790166668.3929523.14214.sh
+'
+probe-done
