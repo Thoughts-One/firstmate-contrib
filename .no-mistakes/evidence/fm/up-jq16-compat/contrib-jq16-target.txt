@@ -1,0 +1,5 @@
+## target 3627ff0, jq on PATH: jq-1.6
+ok - ready-for-pr on a filed issue becomes a planning wake
+ok - a transient ready-for-pr label wakes and its exact acknowledgement survives replay
+ok - a fresh open issue remains measured maintainer triage
+exit=0

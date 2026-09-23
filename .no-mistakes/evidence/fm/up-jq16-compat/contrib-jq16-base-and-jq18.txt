@@ -1,0 +1,14 @@
+## base 9296f9b, jq on PATH: jq-1.6
+          + [$timeline[0][] | .[] | select(.event == "labeled" and (.label.name | ascii_downcase) == ($label | ascii_downcase))                                                                                                       
+jq: 2 compile errors
+jq: error: syntax error, unexpected label, expecting IDENT or __loc__ (Unix shell quoting issues?) at <top-level>, line 3:
+        ready:any($c.labels[]; (.name | ascii_downcase) == ($label | ascii_downcase)),                                                             
+jq: error: syntax error, unexpected label, expecting IDENT or __loc__ (Unix shell quoting issues?) at <top-level>, line 8:
+          + [$timeline[0][] | .[] | select(.event == "labeled" and (.label.name | ascii_downcase) == ($label | ascii_downcase))                                                                                                       
+jq: 2 compile errors
+not ok - add/remove between polls lost ready-for-pr transition
+exit=1
+## target with system jq jq-1.8.2
+ok - ready-for-pr on a filed issue becomes a planning wake
+ok - a transient ready-for-pr label wakes and its exact acknowledgement survives replay
+exit=0

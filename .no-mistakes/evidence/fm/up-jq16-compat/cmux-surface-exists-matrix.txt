@@ -1,0 +1,22 @@
+target jq-1.6    cli=present surface_exists exit=0 (present)
+target jq-1.6    cli=absent  surface_exists exit=1 (absent)
+target jq-1.6    cli=empty   surface_exists exit=1 (absent)
+target jq-1.6    cli=fail    surface_exists exit=1 (absent)
+base   jq-1.6    cli=present surface_exists exit=0 (present)
+base   jq-1.6    cli=absent  surface_exists exit=1 (absent)
+base   jq-1.6    cli=empty   surface_exists exit=0 (present)
+base   jq-1.6    cli=fail    surface_exists exit=0 (present)
+target jq-1.8.1  cli=present surface_exists exit=0 (present)
+target jq-1.8.1  cli=absent  surface_exists exit=1 (absent)
+target jq-1.8.1  cli=empty   surface_exists exit=1 (absent)
+target jq-1.8.1  cli=fail    surface_exists exit=1 (absent)
+base   jq-1.8.1  cli=present surface_exists exit=0 (present)
+base   jq-1.8.1  cli=absent  surface_exists exit=1 (absent)
+base   jq-1.8.1  cli=empty   surface_exists exit=4 (absent)
+base   jq-1.8.1  cli=fail    surface_exists exit=4 (absent)
+## repo test under jq 1.6
+ok - fm_backend_cmux_target_ready: fails when the workspace/surface is not found (list-panes structural check)
+ok - fm_backend_cmux_surface_exists: fails on wholly empty list-panes output regardless of installed jq version
+ok - fm_backend_cmux_target_ready: verifies the workspace title against the expected label first
+ok - fm_backend_cmux_target_ready: rejects a workspace id reused under a different title
+not ok - surface_exists should fail on wholly empty list-panes output, not read it as present
