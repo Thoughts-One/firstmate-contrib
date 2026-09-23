@@ -1,0 +1,4 @@
+ok - unknown extension conformance section selectors fail before setup
+ok - the section coordinator propagates ordered failures and bounded cleanup
+not ok - an isolated extension conformance section failed
+not-autohandled: flow-source (left for the handler; still unacknowledged)

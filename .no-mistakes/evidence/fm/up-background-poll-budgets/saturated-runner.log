@@ -1,0 +1,10 @@
+/tmp/fm-head-4002 pf-race run1 rc=0 63s ok - pending skips a registration retired during settlement
+/tmp/fm-head-4002 ext-binding run1 rc=1 46s not ok - an isolated extension conformance section failed
+/tmp/fm-head-4002 pf-race run2 rc=0 73s not-autohandled: flow-source (left for the handler; still unacknowledged)
+/tmp/fm-head-4002 ext-binding run2 rc=1 48s not ok - an isolated extension conformance section failed
+/bin/bash: line 6: warning: command substitution: ignored null byte in input
+/tmp/fm-base-9296 pf-race run1 rc=0 75s not-autohandled: flow-source (left for the handler; still unacknowledged)
+/tmp/fm-base-9296 ext-binding run1 rc=1 52s not ok - an isolated extension conformance section failed
+/bin/bash: line 6: warning: command substitution: ignored null byte in input
+/tmp/fm-base-9296 pf-race run2 rc=0 68s not-autohandled: flow-source (left for the handler; still unacknowledged)
+/tmp/fm-base-9296 ext-binding run2 rc=1 68s not ok - an isolated extension conformance section failed

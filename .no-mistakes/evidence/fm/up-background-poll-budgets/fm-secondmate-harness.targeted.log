@@ -1,0 +1,2 @@
+ok - B21 config reread serializes concurrent propagation and delivery
+# targeted test passed

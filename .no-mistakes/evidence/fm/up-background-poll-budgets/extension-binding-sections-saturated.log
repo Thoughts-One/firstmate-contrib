@@ -1,0 +1,8 @@
+fm-head-4002 early-bind run1 rc=0 50s 
+fm-head-4002 early-bind run2 rc=0 50s 
+fm-head-4002 lifecycle-invocation-cleanup run1 rc=1 30s not ok - interrupted extension host exited before its exact process group was gone
+fm-head-4002 lifecycle-invocation-cleanup run2 rc=1 27s not ok - interrupted extension host exited before its exact process group was gone
+fm-base-9296 early-bind run1 rc=0 49s 
+fm-base-9296 early-bind run2 rc=0 38s 
+fm-base-9296 lifecycle-invocation-cleanup run1 rc=1 26s not ok - interrupted extension host exited before its exact process group was gone
+fm-base-9296 lifecycle-invocation-cleanup run2 rc=1 28s not ok - interrupted extension host exited before its exact process group was gone
