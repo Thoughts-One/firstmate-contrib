@@ -4007,7 +4007,7 @@ esac
 # is reused only as a real directory owned by this user and writable by nobody
 # else, then tightened, so no other local user can plant or swap a file in it. The
 # staged launch command lives in a sibling directory namespaced by home identity,
-# not in this shared per-id root.
+# not in this per-task root.
 TASK_TMP="/tmp/fm-$(id -u)-$ID"
 if ! (umask 077 && mkdir "$TASK_TMP") 2>/dev/null; then
   if [ -L "$TASK_TMP" ] || [ ! -d "$TASK_TMP" ] || [ ! -O "$TASK_TMP" ] ||
