@@ -1,0 +1,24 @@
+[target] lab session: fm-lab-uidtmp-742733-10982
+=== Scenario 1: stale /tmp/fm-<id> owned by another local account ===
+[target] planted: uid=524288 mode=755 /tmp/fm-uidtmpA742672  (this account uid=1000)
+[target] fm-spawn rc=0
+  stderr: warning: /tmp/fm-live-uidtmp.2JxxmY/home/data/uidtmpA742672/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+[target] meta: tasktmp=/tmp/fm-1000-uidtmpA742672
+[target] root: uid=1000 mode=700 /tmp/fm-1000-uidtmpA742672  gotmp: mode=755 /tmp/fm-1000-uidtmpA742672/gotmp
+[target] legacy after spawn: uid=524288 mode=755 /tmp/fm-uidtmpA742672
+[target] pane output: GOTMPDIR=/tmp/fm-1000-uidtmpA742672/gotmp
+=== Scenario 3: teardown removes the uid-namespaced root, leaves foreign dir ===
+[target] fm-teardown rc=0
+[target] /tmp/fm-1000-uidtmpA742672 removed
+[target] foreign legacy dir still: uid=524288 /tmp/fm-uidtmpA742672
+=== Scenario 2 (adversarial): unsafe pre-planted /tmp/fm-<uid>-<id> still refused ===
+[target] planted: uid=1000 mode=777 /tmp/fm-1000-uidtmpB742672
+[target] fm-spawn rc=1
+  stderr: warning: /tmp/fm-live-uidtmp.2JxxmY/home/data/uidtmpB742672/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  stderr: error: task temp root /tmp/fm-1000-uidtmpB742672 already exists and is not a private directory owned by this user; refusing to stage the launch command there; inspect and remove it, then retry
+[target] meta exists: no; panes before=0 after=1
+[target] dir after: mode=777 /tmp/fm-1000-uidtmpB742672
+[target] symlink variant: fm-spawn rc=1
+  stderr: warning: /tmp/fm-live-uidtmp.2JxxmY/home/data/uidtmpB742672/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  stderr: error: task temp root /tmp/fm-1000-uidtmpB742672 already exists and is not a private directory owned by this user; refusing to stage the launch command there; inspect and remove it, then retry
+[target] lab teardown rc=0

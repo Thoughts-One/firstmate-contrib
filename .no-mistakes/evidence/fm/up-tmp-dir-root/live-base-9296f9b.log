@@ -1,0 +1,7 @@
+[base] lab session: fm-lab-uidtmp-713832-20969
+=== Scenario 1: stale /tmp/fm-<id> owned by another local account ===
+[base] planted: uid=524288 mode=755 /tmp/fm-uidtmpA713795  (this account uid=1000)
+[base] fm-spawn rc=1
+  stderr: warning: /tmp/fm-live-uidtmp.XDftUM/home/data/uidtmpA713795/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+  stderr: error: task temp root /tmp/fm-uidtmpA713795 already exists and is not a private directory owned by this user; refusing to stage the launch command there; inspect and remove it, then retry
+[base] lab teardown rc=0
