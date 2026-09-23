@@ -1,0 +1,11 @@
+not ok - three concurrent local fresh-spawn relaunches in one sweep must not make each other fail on the home task-set lock (unexpected: 'task set is locked')
+--- output ---
+SECONDMATE_LIVENESS: secondmate smconc1: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by another operation (a forced teardown is enumerating or removing its tasks); refusing to create task smconc1 rather than racing it
+SECONDMATE_LIVENESS: secondmate smconc3: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by another operation (a forced teardown is enumerating or removing its tasks); refusing to create task smconc3 rather than racing it
+SECONDMATE_SYNC: secondmate smconc1: skipped: not a git repo
+SECONDMATE_SYNC: secondmate smconc2: skipped: not a git repo
+SECONDMATE_SYNC: secondmate smconc3: skipped: not a git repo
+
+real	0m34.897s
+user	0m2.652s
+sys	0m5.820s

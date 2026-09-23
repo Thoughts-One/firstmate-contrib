@@ -1,0 +1,20 @@
+=== scenario: teardown
+holder:  728819 bash /tmp/fmholders/fm-teardown.sh /tmp/fm-secondmate-liveness.cBxdOV/s-teardown/home/state/.task-set.lock 30 0 /tmp/fm-secondmate-liveness.cBxdOV/s-teardown/m
+SECONDMATE_LIVENESS: secondmate smconc1: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by a forced teardown (pid 728819); refusing to create task smconc1 rather than racing it
+elapsed=3.4s  relaunched(new-window calls)=0
+=== scenario: other
+holder:  750976 bash /tmp/fmholders/other-op.sh /tmp/fm-secondmate-liveness.XxmMBc/s-other/home/state/.task-set.lock 30 0 /tmp/fm-secondmate-liveness.XxmMBc/s-other/m
+SECONDMATE_LIVENESS: secondmate smconc1: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by another operation (pid 750976); refusing to create task smconc1 rather than racing it
+elapsed=3.4s  relaunched(new-window calls)=0
+=== scenario: sibling-releases
+holder:  773991 bash /tmp/fmholders/fm-spawn.sh /tmp/fm-secondmate-liveness.jsWdZh/s-sib-rel/home/state/.task-set.lock 6 0 /tmp/fm-secondmate-liveness.jsWdZh/s-sib-rel/m (releases after 6s)
+elapsed=8.6s  relaunched(new-window calls)=1
+=== scenario: handoff
+holder1:  800127 bash /tmp/fmholders/fm-spawn.sh /tmp/fm-secondmate-liveness.Y2tXhc/s-handoff/home/state/.task-set.lock 5 0 /tmp/fm-secondmate-liveness.Y2tXhc/s-handoff/m1 (releases after 5s; teardown then grabs lock)
+SECONDMATE_LIVENESS: secondmate smconc1: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by a forced teardown (pid 801331); refusing to create task smconc1 rather than racing it
+elapsed=4.7s  relaunched(new-window calls)=0
+holder2 (teardown) pid: 801331
+=== scenario: sibling-hangs
+holder:  964532 bash /tmp/fmholders/fm-spawn.sh /tmp/fm-secondmate-liveness.CapB2V/s-sib-hang/home/state/.task-set.lock 120 0 /tmp/fm-secondmate-liveness.CapB2V/s-sib-hang/m (holds 120s)
+SECONDMATE_LIVENESS: secondmate smconc1: respawn failed after confirmed agent absence on existing endpoint: error: this home's task set is locked by another spawn (pid 964532) creating a task in this home; refusing to create task smconc1 rather than racing it
+elapsed=89.9s  relaunched(new-window calls)=0

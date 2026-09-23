@@ -1,0 +1,5 @@
+ok - sweep: three concurrent local fresh-spawn relaunches in one pass do not race the home task-set lock
+
+real	0m20.700s
+user	0m3.896s
+sys	0m7.585s

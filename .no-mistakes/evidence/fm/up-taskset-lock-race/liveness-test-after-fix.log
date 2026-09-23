@@ -1,0 +1,14 @@
+ok - fm_backend_tmux_agent_state: separates live, dead, missing, ambiguous, and unreadable
+ok - fm_backend_tmux_agent_state: rejects malformed targets before probing tmux
+ok - fm_backend_herdr_agent_state: preserves missing/no-agent/live/unknown husk behavior
+ok - fm_backend_agent_state: routes tmux/Herdr and keeps Zellij unverified
+ok - sweep: a confirmed-dead secondmate endpoint is killed and respawned
+ok - sweep: an already-live secondmate is untouched and distinguishable in verbose diagnostics
+not ok - a successful missing-window recovery should stay silent by default (unexpected: 'SECONDMATE_LIVENESS:')
+--- output ---
+SECONDMATE_LIVENESS: secondmate sm1: respawn failed after recorded endpoint confidently missing: warning: secondmate sm1 sync skipped before launch: primary default-branch commit cannot be resolved
+SECONDMATE_SYNC: secondmate sm1: skipped: primary default-branch commit cannot be resolved
+
+real	0m5.354s
+user	0m1.962s
+sys	0m3.133s
