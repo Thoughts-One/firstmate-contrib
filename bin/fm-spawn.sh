@@ -1927,6 +1927,7 @@ launch_env_snapshot_create() {
   done
   if [ "$wrote" = 0 ]; then
     rm -f "$tmp"
+    rm -f "$STATE/$ID.launch-env"
     return 0
   fi
   if ! chmod 600 "$tmp" || ! mv -f "$tmp" "$STATE/$ID.launch-env"; then
