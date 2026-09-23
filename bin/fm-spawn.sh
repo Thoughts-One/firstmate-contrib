@@ -3947,14 +3947,23 @@ elif [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   # the symmetric guard bin/fm-teardown.sh already runs on return
   # (require_owned_worktree_slot_record): a claim naming a different task
   # refuses here, at the cheapest point, rather than handing that task's slot
-  # to a new worker.
+  # to a new worker - but only while that task's own record still exists in the
+  # home the claim names. A claim can outlive its task's record (an abort that
+  # released the project lock before cleanup, a kill that skipped the EXIT
+  # trap, a teardown fallback that removed the record without releasing the
+  # claim), and refusing those would strand the slot behind a record that will
+  # never come back; such a claim is stale, so this proceeds and overwrites it
+  # exactly as an absent claim would.
   if fm_treehouse_pool_slot "$PROJ_ABS" "$WT"; then
     fm_treehouse_slot_owner_state "$WT" "$ID"
+    if [ "$FM_TREEHOUSE_SLOT_OWNER" = other ] &&
+      [ -n "$FM_TREEHOUSE_SLOT_OWNER_HOME" ] &&
+      [ -f "$FM_TREEHOUSE_SLOT_OWNER_HOME/state/$FM_TREEHOUSE_SLOT_OWNER_ID.meta" ] &&
+      [ ! -L "$FM_TREEHOUSE_SLOT_OWNER_HOME/state/$FM_TREEHOUSE_SLOT_OWNER_ID.meta" ]; then
+      echo "error: Treehouse handed back pool slot $WT, but its slot-owner claim still names task $FM_TREEHOUSE_SLOT_OWNER_ID (home $FM_TREEHOUSE_SLOT_OWNER_HOME), which still has a task record there; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh $FM_TREEHOUSE_SLOT_OWNER_ID), then re-run spawn; inspect window $T" >&2
+      exit 1
+    fi
     case "$FM_TREEHOUSE_SLOT_OWNER" in
-      other)
-        echo "error: Treehouse handed back pool slot $WT, but its slot-owner claim still names task $FM_TREEHOUSE_SLOT_OWNER_ID${FM_TREEHOUSE_SLOT_OWNER_HOME:+ (home $FM_TREEHOUSE_SLOT_OWNER_HOME)}, not $ID; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh $FM_TREEHOUSE_SLOT_OWNER_ID), then re-run spawn; inspect window $T" >&2
-        exit 1
-        ;;
       unsafe)
         SPAWN_SLOT_MARKER=$(fm_treehouse_slot_owner_marker "$WT" 2>/dev/null) || SPAWN_SLOT_MARKER="beside $WT"
         echo "error: Treehouse pool slot $WT carries a slot-owner claim that cannot be read, so it cannot be proved free of another task; refusing to claim it. Inspect or repair the claim file at $SPAWN_SLOT_MARKER (task= and home= lines), then re-run spawn; inspect window $T" >&2

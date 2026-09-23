@@ -758,6 +758,7 @@ test_pool_slot_claim_refuses_a_conflicting_live_owner() {
     printf 'task=%s\n' 'other-task-still-parked'
     printf 'home=%s\n' "$HOME_DIR"
   } > "$SLOT_CLAIM"
+  printf 'kind=scout\n' > "$HOME_DIR/state/other-task-still-parked.meta"
   claim_before=$(cat "$SLOT_CLAIM")
   before=$(git -C "$POOL_DIR" rev-parse HEAD)
 
@@ -778,6 +779,36 @@ test_pool_slot_claim_refuses_a_conflicting_live_owner() {
     printf '# observed conflicting-owner refusal: %s\n' "$(printf '%s\n' "$out" | grep 'error:' | head -n 1)"
   fi
   pass "spawn refuses a Treehouse slot whose claim still names a different, live task"
+}
+
+# A claim naming a different task can outlive that task's own record (a post-
+# publication abort, a kill that skipped the EXIT trap, a teardown fallback
+# that removed the record without releasing the claim). Refusing on the claim
+# alone would strand the slot behind a record that will never come back, so
+# spawn must treat a claim naming a recordless task as stale and proceed.
+test_pool_slot_claim_reclaims_a_stale_conflicting_claim() {
+  local rec id out status
+
+  id='pool-slot-stale-claim-r1'
+  rec=$(make_case slot-stale-claim "$id")
+  read_case_record "$rec"
+  lay_out_as_pool_slot
+  {
+    printf 'task=%s\n' 'other-task-long-gone'
+    printf 'home=%s\n' "$HOME_DIR"
+  } > "$SLOT_CLAIM"
+  [ ! -e "$HOME_DIR/state/other-task-long-gone.meta" ] \
+    || fail "test setup left a record for the task the claim must be stale for"
+
+  out=$(run_spawn "$id" --scout)
+  status=$?
+  expect_code 0 "$status" \
+    "spawn should reclaim a Treehouse slot whose claim names a task with no record"$'\n'"$out"
+  grep -Fxq -- "task=$id" "$SLOT_CLAIM" \
+    || fail "spawn did not overwrite the stale claim with its own: $(cat "$SLOT_CLAIM")"
+  [ -e "$HOME_DIR/state/$id.meta" ] \
+    || fail "spawn did not publish a task record after reclaiming the stale slot"
+  pass "spawn reclaims a Treehouse slot whose claim names a task with no surviving record"
 }
 
 # A slot whose claim already names the task about to spawn (a retried spawn
@@ -807,6 +838,7 @@ test_pool_slot_claim_reclaims_its_own_prior_marker() {
 test_remote_seeded_home_spawns_from_treehouse_pool
 test_pool_slot_claim_follows_the_spawn_outcome
 test_pool_slot_claim_refuses_a_conflicting_live_owner
+test_pool_slot_claim_reclaims_a_stale_conflicting_claim
 test_pool_slot_claim_reclaims_its_own_prior_marker
 test_linked_spawning_home_rejects_primary_before_refresh
 test_stale_pool_base_refreshes_before_branching
