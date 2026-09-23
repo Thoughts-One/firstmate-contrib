@@ -1,0 +1,13 @@
+$ HERDR_SESSION=oldsess fm-herdr-session-retire.sh   # ambient-only selection
+exit=2
+
+$ fm-herdr-session-retire.sh oldsess   # post-stop list unparseable
+fm-herdr-session-retire: 'oldsess' did not report stopped after the stop call (running=<unreadable>)
+exit=1
+--- herdr calls:
+session list --json --session oldsess
+workspace list --session oldsess
+session list --json --session oldsess
+workspace list --session oldsess
+session stop oldsess --json --session oldsess
+session list --json --session oldsess

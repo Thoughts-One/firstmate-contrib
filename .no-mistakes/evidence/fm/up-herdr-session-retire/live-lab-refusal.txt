@@ -1,0 +1,16 @@
+$ fm-herdr-lab.sh provision fm-lab-retire-2699365-29761
+exit=0
+$ fm-herdr-lab.sh run fm-lab-retire-2699365-29761 workspace list
+{"id":"cli:workspace:list","result":{"type":"workspace_list","workspaces":[]}}
+exit=0
+--- live lab session row before:
+[{"name":"fm-lab-retire-2699365-29761","default":false,"running":true}]
+$ fm-herdr-session-retire.sh fm-lab-retire-2699365-29761
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-retire-2699365-29761
+exit=1
+--- live lab session row after retire attempt:
+[{"name":"fm-lab-retire-2699365-29761","default":false,"running":true}]
+$ fm-herdr-lab.sh teardown fm-lab-retire-2699365-29761
+exit=0
+--- lab row after teardown:
+[]

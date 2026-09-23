@@ -1,0 +1,48 @@
+$ fm-herdr-session-retire.sh default
+fm-herdr-session-retire: refusing session name 'default'
+exit=1
+
+$ fm-herdr-session-retire.sh fm-remote
+fm-herdr-session-retire: refusing session name 'fm-remote'
+exit=1
+
+$ fm-herdr-session-retire.sh fm-lab-anything
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-anything
+exit=1
+
+$ fm-herdr-session-retire.sh fm-lab-
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-
+exit=1
+
+$ fm-herdr-session-retire.sh ''
+fm-herdr-session-retire: refusing an empty session name
+exit=1
+
+$ fm-herdr-session-retire.sh NOARGS
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+exit=2
+
+$ fm-herdr-session-retire.sh a b
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+exit=2
+
+$ fm-herdr-session-retire.sh --help
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+exit=0
+
+herdr invocations: 0
