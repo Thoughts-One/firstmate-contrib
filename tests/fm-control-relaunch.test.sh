@@ -217,14 +217,14 @@ EOF
     echo "kind=ship"
     echo "mode=no-mistakes"
     echo "yolo=off"
-    echo "tasktmp=/tmp/fm-$id"
+    echo "tasktmp=/tmp/fm-$(id -u)-$id"
     echo "model=default"
     echo "effort=default"
   } > "$home/state/$id.meta"
   printf '%s\n' "fm-$id" > "$dir/fake/windows"
   printf '%s' "$ses" > "$dir/fake/session-name"
   printf '%s' "$wt" > "$dir/fake/cwd"
-  TASK_TMPS+=("/tmp/fm-$id")
+  TASK_TMPS+=("/tmp/fm-$(id -u)-$id")
 }
 
 run_control() {  # <case-dir> <args...>
@@ -1988,7 +1988,7 @@ EOF
     echo "kind=ship"
     echo "mode=no-mistakes"
     echo "yolo=off"
-    echo "tasktmp=/tmp/fm-$id"
+    echo "tasktmp=/tmp/fm-$(id -u)-$id"
     echo "model=default"
     echo "effort=default"
     echo "backend=herdr"
@@ -2001,14 +2001,14 @@ EOF
   printf '%s' "$survivor" > "$dir/fake/herdr-pane"
   : > "$dir/fake/herdr-log"
   : > "$dir/fake/herdr-stopped"
-  TASK_TMPS+=("/tmp/fm-$id")
+  TASK_TMPS+=("/tmp/fm-$(id -u)-$id")
 }
 
 # Sets HERDR_CASE_DIR rather than echoing it, so callers invoke it as a plain
 # statement. A `dir=$(herdr_case_or_skip ...)` would run add_herdr_ship_task in
 # a command-substitution subshell, where its TASK_TMPS registration would
 # mutate a discarded copy and the EXIT trap would never remove the
-# out-of-tmproot /tmp/fm-<id> root the spawn creates.
+# out-of-tmproot /tmp/fm-<uid>-<id> root the spawn creates.
 HERDR_CASE_DIR=
 herdr_case_or_skip() {  # <name> <id> [session] [surviving-pane]
   HERDR_CASE_DIR=
