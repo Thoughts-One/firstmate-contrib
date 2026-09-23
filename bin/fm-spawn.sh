@@ -3935,7 +3935,28 @@ elif [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   # under its successor.
   # Written under the Treehouse project lock held from before slot allocation
   # through metadata publication, so no other spawn or return sees a half-claim.
+  #
+  # Treehouse's own allocator has no notion of Firstmate tasks: it can hand
+  # back a slot the instant its prior occupant's pane process dies, even
+  # though that task's own Firstmate record may still call it parked, not
+  # torn down. Check the slot's existing claim before overwriting it, mirroring
+  # the symmetric guard bin/fm-teardown.sh already runs on return
+  # (require_owned_worktree_slot_record): a claim naming a different task
+  # refuses here, at the cheapest point, rather than handing that task's slot
+  # to a new worker.
   if fm_treehouse_pool_slot "$PROJ_ABS" "$WT"; then
+    fm_treehouse_slot_owner_state "$WT" "$ID"
+    case "$FM_TREEHOUSE_SLOT_OWNER" in
+      other)
+        echo "error: Treehouse handed back pool slot $WT, but its slot-owner claim still names task $FM_TREEHOUSE_SLOT_OWNER_ID${FM_TREEHOUSE_SLOT_OWNER_HOME:+ (home $FM_TREEHOUSE_SLOT_OWNER_HOME)}, not $ID; refusing to claim a slot that task's own record may still need. Reconcile that task's record (bin/fm-crew-state.sh $FM_TREEHOUSE_SLOT_OWNER_ID), then re-run spawn." >&2
+        exit 1
+        ;;
+      unsafe)
+        SPAWN_SLOT_MARKER=$(fm_treehouse_slot_owner_marker "$WT" 2>/dev/null) || SPAWN_SLOT_MARKER="beside $WT"
+        echo "error: Treehouse pool slot $WT carries a slot-owner claim that cannot be read, so it cannot be proved free of another task; refusing to claim it. Inspect or repair the claim file at $SPAWN_SLOT_MARKER (task= and home= lines), then re-run spawn." >&2
+        exit 1
+        ;;
+    esac
     if ! fm_treehouse_slot_owner_claim "$WT" "$ID" "$FM_HOME"; then
       echo "error: could not claim Treehouse pool slot $WT for task $ID; refusing to launch a worker whose slot cannot later be proved to be its own; inspect window $T" >&2
       exit 1

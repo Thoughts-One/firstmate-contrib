@@ -720,8 +720,8 @@ test_pool_slot_claim_follows_the_spawn_outcome() {
   out=$(run_spawn "$id" --scout)
   status=$?
   [ "$status" -ne 0 ] || fail "spawn launched a worker on a slot it could not claim"
-  assert_contains "$out" "could not claim Treehouse pool slot" \
-    "spawn did not name the unclaimable slot as the reason"
+  assert_contains "$out" "carries a slot-owner claim that cannot be read" \
+    "spawn did not name the unreadable slot claim as the reason"
   [ -d "$SLOT_CLAIM" ] || fail "spawn replaced the directory blocking its slot claim"
   [ ! -e "$HOME_DIR/state/$id.meta" ] || fail "spawn published a record for an unclaimable slot"
   [ "$(git -C "$POOL_DIR" rev-parse HEAD)" = "$before" ] \
@@ -743,8 +743,71 @@ test_pool_slot_claim_follows_the_spawn_outcome() {
   pass "a Treehouse slot claim names the launched task, refuses when unclaimable, and is dropped by a locked abort"
 }
 
+# The double-allocation regression: Treehouse's allocator has no notion of
+# Firstmate tasks, so it can hand back a slot whose .fm-slot-owner claim still
+# names a different, still-open task. Spawn must consult that claim before
+# overwriting it, mirroring bin/fm-teardown.sh's require_owned_worktree_slot_record.
+test_pool_slot_claim_refuses_a_conflicting_live_owner() {
+  local rec id out status before claim_before
+
+  id='pool-slot-conflict-r1'
+  rec=$(make_case slot-conflict "$id")
+  read_case_record "$rec"
+  lay_out_as_pool_slot
+  {
+    printf 'task=%s\n' 'other-task-still-parked'
+    printf 'home=%s\n' "$HOME_DIR"
+  } > "$SLOT_CLAIM"
+  claim_before=$(cat "$SLOT_CLAIM")
+  before=$(git -C "$POOL_DIR" rev-parse HEAD)
+
+  out=$(run_spawn "$id" --scout)
+  status=$?
+  [ "$status" -ne 0 ] \
+    || fail "spawn claimed a Treehouse slot whose recorded owner is a different, live task"
+  assert_contains "$out" "other-task-still-parked" \
+    "spawn refusal did not name the conflicting task"
+  assert_contains "$out" "$POOL_DIR" "spawn refusal did not name the contested slot"
+  [ "$(cat "$SLOT_CLAIM")" = "$claim_before" ] \
+    || fail "spawn overwrote another task's live slot claim"
+  [ ! -e "$HOME_DIR/state/$id.meta" ] \
+    || fail "spawn published a task record after refusing a conflicting slot"
+  [ "$(git -C "$POOL_DIR" rev-parse HEAD)" = "$before" ] \
+    || fail "spawn moved the contested slot's HEAD after refusing to claim it"
+  if [ "${FM_TEST_EVIDENCE:-0}" = 1 ]; then
+    printf '# observed conflicting-owner refusal: %s\n' "$(printf '%s\n' "$out" | grep 'error:' | head -n 1)"
+  fi
+  pass "spawn refuses a Treehouse slot whose claim still names a different, live task"
+}
+
+# A slot whose claim already names the task about to spawn (a retried spawn
+# for the same id that claimed the slot on an earlier attempt) is this task's
+# own prior claim, not a conflict, so spawn must proceed and overwrite it.
+test_pool_slot_claim_reclaims_its_own_prior_marker() {
+  local rec id out status
+
+  id='pool-slot-self-reclaim-r1'
+  rec=$(make_case slot-self-reclaim "$id")
+  read_case_record "$rec"
+  lay_out_as_pool_slot
+  {
+    printf 'task=%s\n' "$id"
+    printf 'home=%s\n' "$HOME_DIR"
+  } > "$SLOT_CLAIM"
+
+  out=$(run_spawn "$id" --scout)
+  status=$?
+  expect_code 0 "$status" \
+    "spawn should reclaim a Treehouse slot its own prior claim already names"$'\n'"$out"
+  grep -Fxq -- "task=$id" "$SLOT_CLAIM" \
+    || fail "spawn did not keep its own claim on the reclaimed slot: $(cat "$SLOT_CLAIM")"
+  pass "spawn reclaims a Treehouse slot whose claim already names the same task"
+}
+
 test_remote_seeded_home_spawns_from_treehouse_pool
 test_pool_slot_claim_follows_the_spawn_outcome
+test_pool_slot_claim_refuses_a_conflicting_live_owner
+test_pool_slot_claim_reclaims_its_own_prior_marker
 test_linked_spawning_home_rejects_primary_before_refresh
 test_stale_pool_base_refreshes_before_branching
 test_non_main_default_branch_refreshes_before_branching
