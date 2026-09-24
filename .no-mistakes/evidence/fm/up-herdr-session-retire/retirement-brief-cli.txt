@@ -1,0 +1,19 @@
+$ FM_HOME=<isolated-home> bin/fm-brief.sh retire-help firstmate --mode direct-PR --herdr-retire-session help
+scaffolded: /tmp/fm-retire-brief-live.QLzxJK/home/data/retire-help/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+
+Generated retirement contract:
+# Herdr retirement - HARD SAFETY CONTRACT
+This brief was explicitly scaffolded with `--herdr-retire-session help` because the task's only Herdr lifecycle action is guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
+
+1. Run only `'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3A0VTP97P80TPV2BRBSRXX3/bin/fm-herdr-session-retire.sh' 'help'` to stop it.
+   It refuses the target unless it is empty, refuses `default`, `fm-remote`, and every `fm-lab-*` name, snapshots and re-verifies every other session before and after the call, and never deletes, restarts, or force-stops anything.
+2. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.
+3. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.
+4. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.
+
+Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.
+The captain fleet uses the running `default` session.
+
+$ combine --herdr-lab and --herdr-retire-session help
+exit=1
+error: --herdr-lab and --herdr-retire-session are mutually exclusive: the lab helper only ever operates on a session it generated itself, while the retirement helper only ever operates on a pre-existing session it did not create

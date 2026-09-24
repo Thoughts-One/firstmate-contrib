@@ -1,0 +1,16 @@
+ok - fm-herdr-session-retire: reserved names fail closed before any Herdr call
+ok - fm-herdr-session-retire: an absent target is refused
+ok - fm-herdr-session-retire: an already-stopped target is refused
+ok - fm-herdr-session-retire: a target reporting default=true is refused regardless of its name
+ok - fm-herdr-session-retire: more than one matching session row is refused
+ok - fm-herdr-session-retire: a target with a nonzero workspace count is refused
+ok - fm-herdr-session-retire: a target with several workspaces is refused
+ok - fm-herdr-session-retire: an unreadable workspace-list response fails closed
+ok - fm-herdr-session-retire: another session drifting between the two internal prechecks is refused
+ok - fm-herdr-session-retire: a target racing to nonempty between the two internal prechecks is refused
+ok - fm-herdr-session-retire: the exact stop call is issued and no delete/server call is ever made
+ok - fm-herdr-session-retire: a clean stop leaves every other session untouched and reports success
+ok - fm-herdr-session-retire: a target still reporting running=true after stop fails the postcondition
+ok - fm-herdr-session-retire: collateral drift during the stop call is refused even though the target did stop
+ok - fm-herdr-session-retire: main enforces exactly one argument and serves --help
+ok - fm-herdr-session-retire: help is processed as a session name

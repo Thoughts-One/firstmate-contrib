@@ -1,0 +1,3 @@
+ok - Pi Calm native /skill:ahoy geometry keeps every collapsed thinking and tool block at zero height while preserving expansion, history, restart, and Calm-off rendering
+
+Captured viewport artifact: /home/kai/.no-mistakes/evidence/01M3A0VTP97P80TPV2BRBSRXX3/pi-calm-hidden-geometry-viewport.txt

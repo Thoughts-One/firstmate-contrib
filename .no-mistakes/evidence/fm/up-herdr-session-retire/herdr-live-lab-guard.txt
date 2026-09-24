@@ -1,0 +1,14 @@
+Scenario: retirement helper refuses lab-owned disposable sessions and preserves them for lab teardown
+Herdr: herdr 0.9.1
+empty_session=fm-lab-retire-empty-2813646-524
+nonempty_session=fm-lab-retire-busy-2813657-11379
+before_empty={"workspace_count":0}
+before_nonempty={"workspace_count":1}
+empty_retire_rc=1
+empty_retire_output=fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-retire-empty-2813646-524
+nonempty_retire_rc=1
+nonempty_retire_output=fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-retire-busy-2813657-11379
+after_empty={"workspace_count":0}
+after_nonempty={"workspace_count":1}
+preserved_running_state=true
+teardown_complete=true

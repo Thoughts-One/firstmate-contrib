@@ -1,0 +1,6 @@
+target=default exit=1
+fm-herdr-session-retire: refusing session name 'default'
+target=fm-remote exit=1
+fm-herdr-session-retire: refusing session name 'fm-remote'
+target=fm-lab-adversarial-123 exit=1
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-adversarial-123

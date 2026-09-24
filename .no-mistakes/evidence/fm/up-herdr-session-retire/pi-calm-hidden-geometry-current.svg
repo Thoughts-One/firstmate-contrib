@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="816" viewBox="0 0 1240 816">
+<rect width="100%" height="100%" fill="#111827"/>
+<style>.terminal { fill: #e5e7eb; font: 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre; }</style>
+<text x="24" y="42" class="terminal"> </text>
+<text x="24" y="60" class="terminal"> pi v0.87.1</text>
+<text x="24" y="78" class="terminal"> escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more</text>
+<text x="24" y="96" class="terminal"> Press ctrl+o to show full startup help and loaded resources.</text>
+<text x="24" y="114" class="terminal"> </text>
+<text x="24" y="132" class="terminal"> Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.</text>
+<text x="24" y="150" class="terminal"> </text>
+<text x="24" y="168" class="terminal">[Skills]</text>
+<text x="24" y="186" class="terminal">  ahoy, no-mistakes</text>
+<text x="24" y="204" class="terminal"> </text>
+<text x="24" y="222" class="terminal">[Extensions]</text>
+<text x="24" y="240" class="terminal">  fm-calm.ts, geometry-provider.ts</text>
+<text x="24" y="258" class="terminal"> </text>
+<text x="24" y="276" class="terminal"> </text>
+<text x="24" y="294" class="terminal"> [skill] ahoy (ctrl+o to expand)</text>
+<text x="24" y="312" class="terminal"> </text>
+<text x="24" y="330" class="terminal"> </text>
+<text x="24" y="348" class="terminal"> CALM_GEOMETRY_FINAL</text>
+<text x="24" y="366" class="terminal"> </text>
+<text x="24" y="384" class="terminal"> - visible row one</text>
+<text x="24" y="402" class="terminal"> - visible row two</text>
+<text x="24" y="420" class="terminal"> </text>
+<text x="24" y="438" class="terminal"> Tool output: collapsed</text>
+<text x="24" y="456" class="terminal"> </text>
+<text x="24" y="474" class="terminal">────────────────────────────────────────────────────────────────────────────────────────────────────</text>
+<text x="24" y="492" class="terminal"> </text>
+<text x="24" y="510" class="terminal">────────────────────────────────────────────────────────────────────────────────────────────────────</text>
+<text x="24" y="528" class="terminal">/tmp/fm-calm-pi-extension.KUGZ6V/geometry-project (main)</text>
+<text x="24" y="546" class="terminal">↑2.4k ↓50 R4.7k W2.4k CH97.9% 59.0%/4.1k (auto)                               deterministic • medium</text>
+<text x="24" y="564" class="terminal"> </text>
+<text x="24" y="582" class="terminal"> </text>
+<text x="24" y="600" class="terminal"> </text>
+<text x="24" y="618" class="terminal"> </text>
+<text x="24" y="636" class="terminal"> </text>
+<text x="24" y="654" class="terminal"> </text>
+<text x="24" y="672" class="terminal"> </text>
+<text x="24" y="690" class="terminal"> </text>
+<text x="24" y="708" class="terminal"> </text>
+<text x="24" y="726" class="terminal"> </text>
+<text x="24" y="744" class="terminal"> </text>
+<text x="24" y="762" class="terminal"> </text>
+<text x="24" y="780" class="terminal"> </text>
+<text x="24" y="798" class="terminal"> </text>
+</svg>
