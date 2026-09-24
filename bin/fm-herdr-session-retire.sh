@@ -20,8 +20,10 @@
 # It canonically snapshots every OTHER session (this is what protects
 # `default`, `fm-remote`, and anything else, with no separate preserve-list
 # interface) and re-runs every one of the checks above immediately before the
-# single destructive call, refusing on any drift or unreadable state. After
-# stopping, it requires the target to remain present with running:false and
+# single destructive call, refusing on any drift or unreadable state. Herdr has
+# no conditional stop, so these checks are best-effort: callers must rule out a
+# concurrent writer that could repopulate the target after the final check.
+# After stopping, it requires the target to remain present with running:false and
 # every other session to still match the pre-stop snapshot before reporting
 # success. Any failed precondition or postcondition is a nonzero exit; there
 # is no fallback, force, delete, or restart path.
