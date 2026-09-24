@@ -32,8 +32,9 @@
 #   omitting both still fails loudly so an accidental omission is never silent.
 #   Set FM_SECONDMATE_CHARTER='<charter>' to fill the charter text.
 #   Set FM_SECONDMATE_SCOPE='<scope>' to write a routing scope distinct from the charter text.
-#   --herdr-lab is mandatory when the task will issue Herdr lifecycle commands.
-#   It adds the hard isolation contract backed by bin/fm-herdr-lab.sh.
+#   --herdr-lab is mandatory for Herdr lifecycle tasks except the single
+#   retirement-only case below. It adds the hard isolation contract backed by
+#   bin/fm-herdr-lab.sh.
 #   --herdr-retire-session <name> is mandatory instead when the task's only Herdr
 #   lifecycle action is guardedly stopping one explicitly named, pre-existing
 #   session Firstmate did not provision. It adds the hard retirement contract
