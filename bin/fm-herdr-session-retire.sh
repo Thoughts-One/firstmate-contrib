@@ -176,7 +176,7 @@ fm_herdr_retire_usage() {
 
 fm_herdr_retire_main() {
   case "${1:-}" in
-    -h|--help|help)
+    --help)
       fm_herdr_retire_usage
       return 0
       ;;

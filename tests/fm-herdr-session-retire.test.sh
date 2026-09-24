@@ -388,6 +388,19 @@ test_main_requires_exactly_one_argument() {
   pass "fm-herdr-session-retire: main enforces exactly one argument and serves --help"
 }
 
+test_help_is_processed_as_a_session_name() {
+  local out
+  reset_fixture
+  write_session help false true
+  write_workspaces help 0
+  out=$(run_with_fake "$ROOT/bin/fm-herdr-session-retire.sh" help) \
+    || fail "a session named help did not reach the guarded retirement path"
+  assert_contains "$out" "stopped help" "retiring a session named help did not report success"
+  [ "$(sed -n 's/^running=//p' "$FAKE_STATE/registry/help")" = false ] \
+    || fail "a session named help was not stopped"
+  pass "fm-herdr-session-retire: help is processed as a session name"
+}
+
 test_reserved_names_are_refused_without_reaching_herdr
 test_absent_target_is_refused
 test_stopped_target_is_refused
@@ -403,3 +416,4 @@ test_successful_postconditions_are_verified
 test_failed_postcondition_target_still_running_is_refused
 test_failed_postcondition_protected_session_drift_is_refused
 test_main_requires_exactly_one_argument
+test_help_is_processed_as_a_session_name
