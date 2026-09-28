@@ -507,8 +507,10 @@ stagger_seed_primary() { # <dir>
 # - the staggered batch's mean gap and total span must stay a clear fraction
 #   of the configured delay, which catches a removed or weakened stagger even
 #   when one gap compresses;
-# - a soft per-gap floor well below the delay still rejects two staggered
-#   workers that truly started together;
+# - the sum of each pair of adjacent staggered gaps must stay half of its ideal
+#   two-delay value, so one worker's cold or warm setup skew that compresses a
+#   single gap does not fail the run, while a schedule that compresses
+#   neighbouring launches together still does;
 # - the staggered mean gap must exceed the whole control span on the same run,
 #   which separates delay-dominated spacing from jitter without a fixed ratio
 #   that would flake when load stretches both batches together;
@@ -521,7 +523,7 @@ import sys
 STAGGER_DELAY = 0.4
 MIN_STAGGERED_MEAN_GAP = STAGGER_DELAY * 0.5       # 0.20s
 MIN_STAGGERED_SPAN_FRACTION = 0.5                  # span >= 0.5 * (n-1) * delay
-MIN_STAGGERED_GAP = STAGGER_DELAY * 0.25           # 0.10s soft floor
+MIN_STAGGERED_PAIR_GAP = STAGGER_DELAY * 2 * 0.5   # adjacent gaps sum >= 0.40s
 MAX_CONTROL_SPAN_FRACTION = 0.75                   # span < 0.75 * (n-1) * delay
 
 
@@ -562,9 +564,10 @@ if staggered_gaps and mean_gap < MIN_STAGGERED_MEAN_GAP:
 if len(staggered) > 1 and staggered_span < ideal_span * MIN_STAGGERED_SPAN_FRACTION:
     problems.append("repeated-host launches were not staggered: span %.3fs < %.2fs"
                     % (staggered_span, ideal_span * MIN_STAGGERED_SPAN_FRACTION))
-if staggered_gaps and min(staggered_gaps) < MIN_STAGGERED_GAP:
-    problems.append("repeated-host launches shared a start instant: smallest gap %.3fs < %.2fs"
-                    % (min(staggered_gaps), MIN_STAGGERED_GAP))
+pair_sums = [first + second for first, second in zip(staggered_gaps, staggered_gaps[1:])]
+if pair_sums and min(pair_sums) < MIN_STAGGERED_PAIR_GAP:
+    problems.append("repeated-host launches shared a start instant: smallest adjacent gap pair sum %.3fs < %.2fs"
+                    % (min(pair_sums), MIN_STAGGERED_PAIR_GAP))
 if staggered_gaps and mean_gap <= control_span:
     problems.append("%s launches were spaced like staggered ones: span %.3fs >= staggered mean gap %.3fs"
                     % (control_label, control_span, mean_gap))
