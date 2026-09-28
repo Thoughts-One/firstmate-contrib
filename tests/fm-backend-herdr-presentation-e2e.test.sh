@@ -8,6 +8,8 @@ set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HERDR_LAB_HELPER=${HERDR_LAB_HELPER:-$ROOT/bin/fm-herdr-lab.sh}
+# shellcheck source=bin/fm-timeout-lib.sh
+. "$ROOT/bin/fm-timeout-lib.sh"
 
 fail() { printf 'not ok - %s\n' "$1" >&2; cleanup_all; exit 1; }
 pass() { printf 'ok - %s\n' "$1"; }
@@ -409,7 +411,7 @@ EOF
 spawn_task() {  # <id> <home> <project> [deadline_seconds]
   local id=$1 home=$2 project=$3 deadline_seconds=${4:-}
   local -a deadline_cmd=()
-  [ -z "$deadline_seconds" ] || deadline_cmd=(timeout "$deadline_seconds")
+  [ -z "$deadline_seconds" ] || deadline_cmd=(fm_run_timed "$deadline_seconds")
   FM_GATE_REFUSE_BYPASS=1 FM_SPAWN_NO_GUARD=1 FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" \
     "${deadline_cmd[@]}" "$ROOT/bin/fm-spawn.sh" "$id" "$project" "sh -c 'while :; do sleep 60; done'" --mode no-mistakes --yolo off --backend herdr
 }
