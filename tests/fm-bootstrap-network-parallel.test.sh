@@ -494,6 +494,93 @@ stagger_seed_primary() { # <dir>
   git -C "$primary" commit -qm 'seed primary default branch'
 }
 
+# Compares one staggered batch against one jitter-only control batch from the
+# same test and prints their spacing; exits nonzero naming every problem. The
+# arrival instant of each worker's first `sync` probe is not the stagger sleep
+# itself: each worker still runs lock, generation, and nudge setup first, and
+# the fake SSH starts Python before it records its timestamp. On a quiet host
+# a staggered gap lands near 0.4s and an unstaggered batch spans a few
+# hundredths of a second. On a busy runner the first worker is often cold and
+# later ones warm, so one staggered gap can compress well below 0.4s, while an
+# unstaggered batch can stretch past 0.3s. No single fixed threshold holds
+# between those two populations, so several signals are read together:
+# - the staggered batch's mean gap and total span must stay a clear fraction
+#   of the configured delay, which catches a removed or weakened stagger even
+#   when one gap compresses;
+# - a soft per-gap floor well below the delay still rejects two staggered
+#   workers that truly started together;
+# - the staggered mean gap must exceed the whole control span on the same run,
+#   which separates delay-dominated spacing from jitter without a fixed ratio
+#   that would flake when load stretches both batches together;
+# - the control span must stay below a soft ceiling that a staggered batch
+#   spanning 0.4s * (N-1) would still exceed even with one compressed gap.
+stagger_spacing_report() { # <staggered-timing-log> <control-timing-log> <control-label> <launches>
+  python3 - "$@" <<'PYSPACING'
+import sys
+
+STAGGER_DELAY = 0.4
+MIN_STAGGERED_MEAN_GAP = STAGGER_DELAY * 0.5       # 0.20s
+MIN_STAGGERED_SPAN_FRACTION = 0.5                  # span >= 0.5 * (n-1) * delay
+MIN_STAGGERED_GAP = STAGGER_DELAY * 0.25           # 0.10s soft floor
+MAX_CONTROL_SPAN_FRACTION = 0.75                   # span < 0.75 * (n-1) * delay
+
+
+def convergence_launches(path):
+    stamps = []
+    with open(path) as handle:
+        for line in handle:
+            fields = line.split()
+            if (len(fields) == 4 and fields[1] == "fm-remote-secondmate-control.sh"
+                    and fields[3] == "sync"):
+                stamps.append(float(fields[2]))
+    return sorted(stamps)
+
+
+def gaps(stamps):
+    return [later - earlier for earlier, later in zip(stamps, stamps[1:])]
+
+
+def span(stamps):
+    return (stamps[-1] - stamps[0]) if len(stamps) > 1 else 0.0
+
+
+staggered_log, control_log, control_label, want = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+staggered, control = convergence_launches(staggered_log), convergence_launches(control_log)
+staggered_gaps, control_gaps = gaps(staggered), gaps(control)
+staggered_span, control_span = span(staggered), span(control)
+mean_gap = (sum(staggered_gaps) / len(staggered_gaps)) if staggered_gaps else 0.0
+ideal_span = STAGGER_DELAY * max(want - 1, 0)
+
+problems = []
+if len(staggered) != want:
+    problems.append("staggered batch made %d convergence launches, want %d" % (len(staggered), want))
+if len(control) != want:
+    problems.append("%s batch made %d convergence launches, want %d" % (control_label, len(control), want))
+if staggered_gaps and mean_gap < MIN_STAGGERED_MEAN_GAP:
+    problems.append("repeated-host launches were not staggered: mean gap %.3fs < %.2fs"
+                    % (mean_gap, MIN_STAGGERED_MEAN_GAP))
+if len(staggered) > 1 and staggered_span < ideal_span * MIN_STAGGERED_SPAN_FRACTION:
+    problems.append("repeated-host launches were not staggered: span %.3fs < %.2fs"
+                    % (staggered_span, ideal_span * MIN_STAGGERED_SPAN_FRACTION))
+if staggered_gaps and min(staggered_gaps) < MIN_STAGGERED_GAP:
+    problems.append("repeated-host launches shared a start instant: smallest gap %.3fs < %.2fs"
+                    % (min(staggered_gaps), MIN_STAGGERED_GAP))
+if staggered_gaps and mean_gap <= control_span:
+    problems.append("%s launches were spaced like staggered ones: span %.3fs >= staggered mean gap %.3fs"
+                    % (control_label, control_span, mean_gap))
+if len(control) > 1 and control_span >= ideal_span * MAX_CONTROL_SPAN_FRACTION:
+    problems.append("%s launches lost their parallelism: span %.3fs >= %.2fs"
+                    % (control_label, control_span, ideal_span * MAX_CONTROL_SPAN_FRACTION))
+
+print("staggered gaps=%s mean=%.3f span=%.3f %s gaps=%s span=%.3f"
+      % (["%.3f" % gap for gap in staggered_gaps], mean_gap, staggered_span, control_label,
+         ["%.3f" % gap for gap in control_gaps], control_span))
+for problem in problems:
+    print(problem)
+raise SystemExit(1 if problems else 0)
+PYSPACING
+}
+
 test_remote_probe_launch_stagger_when_configured() {
   local dir id spacing n
   dir="$TMP_ROOT/stagger-configured"
@@ -515,54 +602,10 @@ test_remote_probe_launch_stagger_when_configured() {
   [ "$n" -eq 3 ] \
     || fail "repeat batch: expected exactly 3 readiness probes to the configured host (no retry), got $n"$'\n'"$(cat "$timing_rep")"
 
-  spacing=$(python3 - "$timing_rep" "$timing_dist" <<'PYSPACING'
-import sys
-
-# One threshold sits between two well-separated populations: a staggered gap
-# measures about 0.4s plus a small scheduling margin, while an unstaggered
-# batch spans well under that even under load.
-MIN_REPEAT_GAP = 0.30
-MAX_DISTINCT_SPAN = 0.30
-
-
-def convergence_launches(path):
-    stamps = []
-    with open(path) as handle:
-        for line in handle:
-            fields = line.split()
-            if (len(fields) == 4 and fields[1] == "fm-remote-secondmate-control.sh"
-                    and fields[3] == "sync"):
-                stamps.append(float(fields[2]))
-    return sorted(stamps)
-
-
-def gaps(stamps):
-    return [later - earlier for earlier, later in zip(stamps, stamps[1:])]
-
-
-repeat_log, distinct_log = sys.argv[1], sys.argv[2]
-repeat, distinct = convergence_launches(repeat_log), convergence_launches(distinct_log)
-repeat_gaps, distinct_gaps = gaps(repeat), gaps(distinct)
-
-problems = []
-if len(repeat) != 3:
-    problems.append("repeat batch made %d convergence launches, want 3" % len(repeat))
-if len(distinct) != 3:
-    problems.append("distinct batch made %d convergence launches, want 3" % len(distinct))
-if repeat_gaps and min(repeat_gaps) < MIN_REPEAT_GAP:
-    problems.append("repeated-host launches were not staggered: smallest gap %.3fs < %.2fs"
-                    % (min(repeat_gaps), MIN_REPEAT_GAP))
-if distinct and distinct[-1] - distinct[0] > MAX_DISTINCT_SPAN:
-    problems.append("distinct-host launches lost their parallelism: span %.3fs > %.2fs"
-                    % (distinct[-1] - distinct[0], MAX_DISTINCT_SPAN))
-
-print("repeat gaps=%s distinct gaps=%s"
-      % (["%.3f" % gap for gap in repeat_gaps], ["%.3f" % gap for gap in distinct_gaps]))
-for problem in problems:
-    print(problem)
-raise SystemExit(1 if problems else 0)
-PYSPACING
-  ) || fail "launch spacing did not isolate the configured-host stagger"$'\n'"$spacing"
+  # The distinct-host batch is the jitter-only control: same config, same
+  # size, but no host repeats, so nothing in it may be spaced.
+  spacing=$(stagger_spacing_report "$timing_rep" "$timing_dist" distinct-host 3) \
+    || fail "launch spacing did not isolate the configured-host stagger"$'\n'"$spacing"
 
   if [ -n "${FM_TEST_EVIDENCE_FILE:-}" ]; then
     {
@@ -582,6 +625,12 @@ test_remote_probe_launch_stagger_when_absent() {
 
   run_stagger_scenario "$dir" repeat 0 0
   local out_rep=$STAGGER_OUT timing_rep=$STAGGER_TIMING_LOG
+  # The same repeated-host batch with the config file present is the
+  # staggered reference on this run, so the absent-config batch is judged
+  # against real stagger spacing under the same load rather than a fixed
+  # arrival window.
+  run_stagger_scenario "$dir" reference 0 1
+  local timing_ref=$STAGGER_TIMING_LOG
 
   for id in $STAGGER_TEST_IDS; do
     assert_contains "$out_rep" "BOOTSTRAP_INFO: remote secondmate $id already live" \
@@ -592,39 +641,8 @@ test_remote_probe_launch_stagger_when_absent() {
   [ "$n" -eq 3 ] \
     || fail "repeat batch with no config file: expected exactly 3 readiness probes, got $n"$'\n'"$(cat "$timing_rep")"
 
-  spacing=$(python3 - "$timing_rep" <<'PYABSENT'
-import sys
-
-# Absent = no staggering at all, so even repeated launches to the same host
-# must land within an ordinary unstaggered span.
-MAX_REPEAT_SPAN = 0.30
-
-
-def convergence_launches(path):
-    stamps = []
-    with open(path) as handle:
-        for line in handle:
-            fields = line.split()
-            if (len(fields) == 4 and fields[1] == "fm-remote-secondmate-control.sh"
-                    and fields[3] == "sync"):
-                stamps.append(float(fields[2]))
-    return sorted(stamps)
-
-
-repeat = convergence_launches(sys.argv[1])
-problems = []
-if len(repeat) != 3:
-    problems.append("repeat batch made %d convergence launches, want 3" % len(repeat))
-if repeat and repeat[-1] - repeat[0] > MAX_REPEAT_SPAN:
-    problems.append("repeated-host launches were staggered with no config file present: span %.3fs > %.2fs"
-                    % (repeat[-1] - repeat[0], MAX_REPEAT_SPAN))
-
-print("repeat span=%s" % ("%.3f" % (repeat[-1] - repeat[0]) if len(repeat) > 1 else "n/a"))
-for problem in problems:
-    print(problem)
-raise SystemExit(1 if problems else 0)
-PYABSENT
-  ) || fail "an absent config file unexpectedly staggered launches"$'\n'"$spacing"
+  spacing=$(stagger_spacing_report "$timing_ref" "$timing_rep" absent-config 3) \
+    || fail "an absent config file unexpectedly staggered launches"$'\n'"$spacing"
 
   if [ -n "${FM_TEST_EVIDENCE_FILE:-}" ]; then
     {
