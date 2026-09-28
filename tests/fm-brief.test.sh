@@ -850,6 +850,8 @@ test_herdr_retire_session_contract_is_explicit_and_complete() {
     "Herdr retire-session brief missing the reserved-name refusal summary"
   assert_grep "never deletes, restarts, or force-stops anything" "$brief" \
     "Herdr retire-session brief missing the stop-only boundary"
+  assert_grep "rule out concurrent writers against the target" "$brief" \
+    "Herdr retire-session brief missing the no-concurrent-writers prerequisite"
   assert_grep "direct \`herdr server stop\`" "$brief" \
     "Herdr retire-session brief missing the forbidden server-global command list"
   assert_grep "a different helper from \`bin/fm-herdr-lab.sh\`" "$brief" \

@@ -531,9 +531,10 @@ HERDR_SECTION=$(printf '%s\n' \
 '' \
 '1. Run only `'"$HERDR_RETIRE_HELPER"' '"$HERDR_RETIRE_TARGET"'` to stop it.' \
 '   It refuses the target unless it is empty, refuses `default`, `fm-remote`, and every `fm-lab-*` name, snapshots and re-verifies every other session before and after the call, and never deletes, restarts, or force-stops anything.' \
-'2. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.' \
-'3. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.' \
-'4. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.' \
+'2. Before that call, rule out concurrent writers against the target: Herdr has no conditional stop, so the helper'\''s emptiness check is best-effort and another client can add a workspace between the final check and the stop.' \
+'3. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.' \
+'4. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.' \
+'5. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.' \
 '' \
 'Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.' \
 'The captain fleet uses the running `default` session.')
