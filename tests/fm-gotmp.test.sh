@@ -173,6 +173,28 @@ test_teardown_removes_superseded_tasktmp_prior_dir() {
   pass "fm-teardown removes the superseded root recorded as tasktmp_prior= in meta"
 }
 
+test_teardown_ignores_symlinked_tasktmp() {
+  # A recorded root that is a symlink (as another local account could plant at a
+  # shared legacy /tmp/fm-<id> path) must be neither followed nor removed.
+  local id=td-link-z6 target task_tmp prior_tmp fake
+  target="$TMP_ROOT/$id-target"
+  task_tmp="$TMP_ROOT/fm-$id"
+  prior_tmp="$TMP_ROOT/fm-$id-prior"
+  mkdir -p "$target/gotmp"
+  printf 'keep\n' > "$target/gotmp/precious"
+  ln -s "$target" "$task_tmp"
+  ln -s "$target" "$prior_tmp"
+  fake=$(make_fake_root "$id" "$task_tmp")
+  printf 'tasktmp_prior=%s\n' "$prior_tmp" >> "$fake/state/$id.meta"
+  FM_HOME="$fake" bash "$fake/bin/fm-teardown.sh" "$id" >/dev/null 2>&1 \
+    || fail "teardown exited non-zero with a symlinked tasktmp"
+  [ -f "$target/gotmp/precious" ] \
+    || fail "teardown followed a symlinked tasktmp and removed its target"
+  [ -L "$task_tmp" ] || fail "teardown removed the symlinked tasktmp ($task_tmp)"
+  [ -L "$prior_tmp" ] || fail "teardown removed the symlinked tasktmp_prior ($prior_tmp)"
+  pass "fm-teardown leaves a symlinked tasktmp=/tasktmp_prior= root alone"
+}
+
 test_teardown_skips_gracefully_without_tasktmp() {
   # Backward compat: a meta from a pre-fix task has no tasktmp= line. Teardown must
   # not error and must not remove anything.
@@ -268,5 +290,6 @@ test_teardown_skips_gracefully_when_dir_missing() {
 
 test_teardown_removes_tasktmp_dir
 test_teardown_removes_superseded_tasktmp_prior_dir
+test_teardown_ignores_symlinked_tasktmp
 test_teardown_skips_gracefully_without_tasktmp
 test_teardown_skips_gracefully_when_dir_missing

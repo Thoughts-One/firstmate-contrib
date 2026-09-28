@@ -1132,6 +1132,11 @@ PR_URL=$(grep '^pr=' "$META" | tail -1 | cut -d= -f2- || true)
 TASK_TMP=$(grep '^tasktmp=' "$META" | cut -d= -f2- || true)
 # tasktmp_prior is an older-formula root that a relaunch superseded; absent otherwise.
 TASK_TMP_PRIOR=$(grep '^tasktmp_prior=' "$META" | tail -1 | cut -d= -f2- || true)
+# A legacy /tmp/fm-<id> root is shared by every local account. Act on a recorded
+# temp root (reap and removal) only while it is still this user's real
+# directory; otherwise leave it alone.
+[ -n "$TASK_TMP" ] && { [ -L "$TASK_TMP" ] || [ ! -d "$TASK_TMP" ] || [ ! -O "$TASK_TMP" ]; } && TASK_TMP=
+[ -n "$TASK_TMP_PRIOR" ] && { [ -L "$TASK_TMP_PRIOR" ] || [ ! -d "$TASK_TMP_PRIOR" ] || [ ! -O "$TASK_TMP_PRIOR" ]; } && TASK_TMP_PRIOR=
 BUSY_GEN=$(fm_meta_get "$META" busy_gen)
 if [ -z "$BUSY_GEN" ]; then
   BUSY_GEN=$(cat "$STATE/$ID.busy-gen" 2>/dev/null || true)
@@ -3744,11 +3749,8 @@ fm_backend_clear_transition "$BACKEND" "$STATE" "$T" || true
 # Remove the per-task temp root (/tmp/fm-<id>+uid<uid>/, incl. its gotmp/) recorded by spawn.
 # Read before the state-file rm below; empty (pre-fix tasks without tasktmp=) is a no-op.
 [ -n "$TASK_TMP" ] && rm -rf "$TASK_TMP"
-# A superseded older-formula root may sit at a path shared by every local
-# account, so remove it only while it is still this user's real directory.
-if [ -n "$TASK_TMP_PRIOR" ] && [ ! -L "$TASK_TMP_PRIOR" ] && [ -d "$TASK_TMP_PRIOR" ] && [ -O "$TASK_TMP_PRIOR" ]; then
-  rm -rf "$TASK_TMP_PRIOR"
-fi
+# A superseded older-formula root; both roots were ownership-checked when read.
+[ -n "$TASK_TMP_PRIOR" ] && rm -rf "$TASK_TMP_PRIOR"
 # Retire only this Firstmate home's launch namespace. Its never-reused per-spawn
 # files leave the equal task-id namespace of every other home untouched.
 teardown_launch_home_token() {
