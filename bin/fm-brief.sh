@@ -310,6 +310,15 @@ if [ "$KIND" = secondmate ] && [ "$HERDR_LAB" -eq 1 ]; then
 fi
 
 if [ -n "$HERDR_RETIRE_SESSION" ]; then
+  # Same safe-identifier class as task ids and herdr endpoint atoms: the name is
+  # rendered into agent-facing Markdown prose, so a backtick or newline would
+  # break the contract or inject apparent instructions.
+  case "$HERDR_RETIRE_SESSION" in
+    *[!A-Za-z0-9._-]*)
+      echo "error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes" >&2
+      exit 1
+      ;;
+  esac
   if [ "$KIND" = secondmate ]; then
     echo "error: --herdr-retire-session applies only to crewmate ship or scout briefs" >&2
     exit 1

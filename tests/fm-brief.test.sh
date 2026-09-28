@@ -913,6 +913,20 @@ test_herdr_lab_and_herdr_retire_session_are_mutually_exclusive() {
   expect_code 1 "$status" "an empty --herdr-retire-session name must be rejected"
   assert_absent "$home/data/herdr-empty-name/brief.md" \
     "rejected empty --herdr-retire-session still wrote a brief"
+
+  status=0
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" herdr-backtick-name firstmate --mode direct-PR \
+    --herdr-retire-session 'mbk`x' >/dev/null 2>&1 || status=$?
+  expect_code 1 "$status" "a --herdr-retire-session name with a backtick must be rejected"
+  assert_absent "$home/data/herdr-backtick-name/brief.md" \
+    "rejected backtick --herdr-retire-session still wrote a brief"
+
+  status=0
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" herdr-newline-name firstmate --mode direct-PR \
+    --herdr-retire-session $'mbk\ninject' >/dev/null 2>&1 || status=$?
+  expect_code 1 "$status" "a --herdr-retire-session name with a newline must be rejected"
+  assert_absent "$home/data/herdr-newline-name/brief.md" \
+    "rejected newline --herdr-retire-session still wrote a brief"
   pass "fm-brief.sh: --herdr-lab and --herdr-retire-session are mutually exclusive and require a real name"
 }
 
