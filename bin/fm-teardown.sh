@@ -281,12 +281,11 @@
 #     root via `lsof -a -d cwd` (cheap: bounded by process count, not by
 #     walking the worktree's file tree) and sends TERM, then KILL after a short
 #     grace period to any survivor whose process identity still matches. The
-#     worktree and the current uid-namespaced tasktmp are unique per task and
-#     never shared, so this cannot reach another task's or the primary's
-#     processes. A recorded tasktmp_prior (an older-formula root left by a
-#     relaunch) is account-agnostic and may be shared with another local
-#     account, so it is a weaker guarantee. Idempotent: nothing left to find
-#     is a silent no-op.
+#     worktree and the uid-namespaced tasktmp are unique per task and never
+#     shared, so this cannot reach another task's or the primary's processes.
+#     A recorded tasktmp without the uid-namespaced name (a legacy
+#     account-agnostic root) is never reaped or removed. Idempotent: nothing
+#     left to find is a silent no-op.
 #   Fix 3 - sweep abandoned remote job workers. A remote job worker started
 #     from a worktree's own bin/ outlives that worktree's removal without
 #     being reachable by Fix 2, because its working directory is wherever it
@@ -1142,13 +1141,12 @@ PR_URL=$(grep '^pr=' "$META" | tail -1 | cut -d= -f2- || true)
 # tasktmp is recorded by fm-spawn for tasks that set up a per-task temp root
 # (/tmp/fm-<id>+uid<uid>/); absent for tasks spawned before that change, so tolerate empty.
 TASK_TMP=$(grep '^tasktmp=' "$META" | cut -d= -f2- || true)
-# tasktmp_prior is an older-formula root that a relaunch superseded; absent otherwise.
-TASK_TMP_PRIOR=$(grep '^tasktmp_prior=' "$META" | tail -1 | cut -d= -f2- || true)
-# A legacy /tmp/fm-<id> root is shared by every local account. Act on a recorded
-# temp root (reap and removal) only while it is still this user's real
-# directory; otherwise leave it alone.
+# Act on a recorded temp root (reap and removal) only when it carries this task's
+# uid-namespaced name and is still this user's real directory. A legacy
+# /tmp/fm-<id> root is shared by every local account and every home, so it is
+# left alone.
+[ "${TASK_TMP##*/}" = "fm-$ID+uid$(id -u)" ] || TASK_TMP=
 [ -n "$TASK_TMP" ] && { [ -L "$TASK_TMP" ] || [ ! -d "$TASK_TMP" ] || [ ! -O "$TASK_TMP" ]; } && TASK_TMP=
-[ -n "$TASK_TMP_PRIOR" ] && { [ -L "$TASK_TMP_PRIOR" ] || [ ! -d "$TASK_TMP_PRIOR" ] || [ ! -O "$TASK_TMP_PRIOR" ]; } && TASK_TMP_PRIOR=
 BUSY_GEN=$(fm_meta_get "$META" busy_gen)
 if [ -z "$BUSY_GEN" ]; then
   BUSY_GEN=$(cat "$STATE/$ID.busy-gen" 2>/dev/null || true)
@@ -2208,7 +2206,7 @@ reap_task_backend_process_group() {  # <label>
 }
 
 # Reap every process rooted (by cwd) under this task's own worktree or tasktmp
-# (and a superseded tasktmp_prior, see Fix 2) before any is removed. TERM
+# (see Fix 2) before any is removed. TERM
 # first, then KILL after a short grace period for anything still alive; a
 # process that exits on its own between the two passes is simply absent from
 # the recheck. A missing lsof uses the backend process-group fallback; an lsof
@@ -3597,9 +3595,9 @@ fi
 # not by task-worktree cleanup.
 if [ "$KIND" != secondmate ] && teardown_owns_worktree; then
   conclude_task_no_mistakes_run "$WT"
-  reap_task_worktree_processes worktree "$WT" "$TASK_TMP" "$TASK_TMP_PRIOR"
+  reap_task_worktree_processes worktree "$WT" "$TASK_TMP"
 elif [ "$KIND" != secondmate ]; then
-  reap_task_worktree_processes tasktmp "$TASK_TMP" "$TASK_TMP_PRIOR"
+  reap_task_worktree_processes tasktmp "$TASK_TMP"
 fi
 if [ "$KIND" = ship ] && teardown_owns_worktree && [ -e "$CONFIG/pipeline-spend" ]; then
   FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
@@ -3790,8 +3788,6 @@ fm_backend_clear_transition "$BACKEND" "$STATE" "$T" || true
 # Remove the per-task temp root (/tmp/fm-<id>+uid<uid>/, incl. its gotmp/) recorded by spawn.
 # Read before the state-file rm below; empty (pre-fix tasks without tasktmp=) is a no-op.
 [ -n "$TASK_TMP" ] && rm -rf "$TASK_TMP"
-# A superseded older-formula root; both roots were ownership-checked when read.
-[ -n "$TASK_TMP_PRIOR" ] && rm -rf "$TASK_TMP_PRIOR"
 # Retire only this Firstmate home's launch namespace. Its never-reused per-spawn
 # files leave the equal task-id namespace of every other home untouched.
 teardown_launch_home_token() {

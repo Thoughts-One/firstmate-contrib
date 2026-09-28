@@ -490,30 +490,22 @@ test_relaunch_preserves_durable_task_metadata() {
   pass "fm-control relaunch: durable task metadata survives replacement launch publication"
 }
 
-test_relaunch_keeps_a_superseded_task_temp_root_for_teardown() {
-  local dir out rc id=rl45 legacy_tmp
-  dir=$(new_case prior-tasktmp "$id")
+test_relaunch_records_only_the_uid_namespaced_task_temp_root() {
+  local dir out rc id=rl45
+  dir=$(new_case legacy-tasktmp "$id")
   add_ship_task "$dir" "$id" claude
   # A task spawned before the uid-namespaced temp root recorded the older
-  # account-agnostic path; relaunch rewrites tasktmp= to the current formula.
-  legacy_tmp="/tmp/fm-$id"
-  sed -i.bak "s|^tasktmp=.*|tasktmp=$legacy_tmp|" "$dir/home/state/$id.meta"
+  # account-agnostic path; relaunch must replace it, not carry it forward.
+  sed -i.bak "s|^tasktmp=.*|tasktmp=/tmp/fm-$id|" "$dir/home/state/$id.meta"
   rm -f "$dir/home/state/$id.meta.bak"
 
   out=$(run_control "$dir" "$id" relaunch --note "continue after upgrade"); rc=$?
   expect_code 0 "$rc" "relaunch should succeed across a temp-root formula change"$'\n'"$out"
   [ "$(meta_field "$dir" "$id" tasktmp)" = "/tmp/fm-$id+uid$(id -u)" ] \
     || fail "relaunch must record the current temp root"
-  [ "$(meta_field "$dir" "$id" tasktmp_prior)" = "$legacy_tmp" ] \
-    || fail "relaunch must keep the superseded temp root recorded so teardown can remove it"
-
-  out=$(run_control "$dir" "$id" relaunch --note "continue again"); rc=$?
-  expect_code 0 "$rc" "a second relaunch should succeed"$'\n'"$out"
-  [ "$(meta_field "$dir" "$id" tasktmp_prior)" = "$legacy_tmp" ] \
-    || fail "a later relaunch must carry the superseded temp root forward"
-  [ "$(grep -c '^tasktmp_prior=' "$dir/home/state/$id.meta")" = 1 ] \
-    || fail "the superseded temp root must be recorded exactly once"
-  pass "fm-control relaunch: a superseded temp root stays recorded as tasktmp_prior across relaunches"
+  ! grep -q '/tmp/fm-'"$id"'$' "$dir/home/state/$id.meta" \
+    || fail "relaunch must not keep the shared legacy temp root recorded"
+  pass "fm-control relaunch: the legacy temp root is replaced by the uid-namespaced one"
 }
 
 test_relaunch_serializes_concurrent_durable_metadata_publication() {
@@ -2472,7 +2464,7 @@ test_relaunch_refuses_before_exit_when_the_composer_holds_pending_text
 test_relaunch_refuses_before_exit_when_the_composer_state_is_unproven
 test_relaunch_from_linked_home_preserves_recorded_worktree
 test_relaunch_preserves_durable_task_metadata
-test_relaunch_keeps_a_superseded_task_temp_root_for_teardown
+test_relaunch_records_only_the_uid_namespaced_task_temp_root
 test_relaunch_serializes_concurrent_durable_metadata_publication
 test_disabled_relaunch_clears_prior_trace_context
 test_relaunch_appends_the_progress_note_to_the_instructions
