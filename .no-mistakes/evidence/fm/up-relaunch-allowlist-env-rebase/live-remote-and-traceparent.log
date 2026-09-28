@@ -1,0 +1,26 @@
+##### Scenario: remote secondmate relaunch (FM_REMOTE_JOB_ACTIVE=1), real pane holds allowlist values
+error: smR was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smR
+snapshots in state:
+none
+worker env:
+ALLOWED=pane-value
+EMPTY=
+UNSET=<unset>
+AMBIENT=<unset>
+TP=<unset>
+
+##### Scenario: allowlisted TRACEPARENT never snapshotted / never overrides recorded carrier
+error: smT was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smT
+snapshot content:
+export FM_TEST_ALLOWED='launcher-value'
+0
+recorded meta traceparent: 00-31afd42adfacc4af809bad33ae17f4b4-0392bff9e7730ef2-01
+worker env:
+ALLOWED=launcher-value
+EMPTY=<unset>
+UNSET=<unset>
+AMBIENT=<unset>
+TP=00-31afd42adfacc4af809bad33ae17f4b4-0392bff9e7730ef2-01
+(launcher TP was 00-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-ffffffffffffffff-01)
+
+##### Scenario: teardown removes every leftover incarnation snapshot

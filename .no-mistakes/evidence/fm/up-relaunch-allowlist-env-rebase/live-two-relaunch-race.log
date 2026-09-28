@@ -1,0 +1,24 @@
+error: the replacement agent for smC did not come up within 15s (endpoint reads 'dead')
+error: smC was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smC
+--- state after relaunch 1:
+-rw-------. 1 kai kai  106 Sep 28 23:27 smC.launch-env.s1790630820.4083832.12556
+error: the replacement agent for smC did not come up within 15s (endpoint reads 'dead')
+error: smC was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smC
+--- state after relaunch 2 (two distinct 0600 snapshots expected):
+-rw-------. 1 kai kai  106 Sep 28 23:27 smC.launch-env.s1790630820.4083832.12556
+-rw-------. 1 kai kai   68 Sep 28 23:27 smC.launch-env.s1790630850.4107609.24634
+== delayed launch #1 (staged: . '/tmp/fm-smC+4d86a....s1790630820.4083832.12556.sh') result:
+ALLOWED=source value; $(touch SHOULD_NOT_EXIST) `false` "quoted"
+EMPTY=
+UNSET=<unset>
+AMBIENT=<unset>
+TP=<unset>
+== delayed launch #2 (staged: . '/tmp/fm-smC+4d86a....s1790630850.4107609.24634.sh') result:
+ALLOWED=second-incarnation
+EMPTY=
+UNSET=<unset>
+AMBIENT=<unset>
+TP=<unset>
+--- remaining snapshots after both launches:
+none
+no injected file

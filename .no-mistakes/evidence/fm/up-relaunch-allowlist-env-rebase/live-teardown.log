@@ -1,0 +1,18 @@
+##### Scenario: teardown removes every leftover incarnation snapshot (real relaunch-produced snapshots, real tmux endpoint)
+error: smD was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smD
+error: smD was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/sm-smD
+snapshots before teardown:
+smD.launch-env.s1790630972.25794.29716
+smD.launch-env.s1790630998.68684.26234
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown smD complete (window fmses:fm-smD, worktree /tmp/fm-lab.FHmuqj-ext/sm-smD)
+teardown rc=0
+snapshots after teardown:
+none
+home-summary.json

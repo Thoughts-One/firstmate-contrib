@@ -1,0 +1,32 @@
+ok - fm-control relaunch: a same-harness relaunch replaces the agent in the same endpoint and worktree
+not ok - each incarnation should own its own launch snapshot: /tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.launch-env
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/applypatch-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/post-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-merge-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/prepare-commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/post-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-rebase': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/post-checkout': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/post-merge': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-push': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/post-rewrite': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/pre-auto-gc': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/same-15693/home/state/rl1.git-hooks/sendemail-validate': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/applypatch-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/post-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-merge-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/prepare-commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/post-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-rebase': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/post-checkout': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/post-merge': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-push': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/post-rewrite': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/pre-auto-gc': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.AQ7A2I/allowlisted-env-24610/home/state/sm-env.git-hooks/sendemail-validate': Permission denied

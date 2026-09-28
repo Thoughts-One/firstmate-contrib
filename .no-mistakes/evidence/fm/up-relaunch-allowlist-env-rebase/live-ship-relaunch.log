@@ -1,0 +1,11 @@
+##### Scenario: ordinary (ship) relaunch creates no snapshot; allowlist values expand in the destination pane
+error: the replacement agent for shp did not come up within 15s (endpoint reads 'ambiguous')
+error: shp was relaunched on claude but no running agent could be confirmed; its work is preserved at /tmp/fm-lab.FHmuqj-ext/wt
+snapshots:
+none
+worker env:
+ALLOWED=pane-value
+EMPTY=
+UNSET=<unset>
+AMBIENT=<unset>
+TP=00-311f110c1b64fbf62db23444589a40c8-7dd2efcf06916213-01
