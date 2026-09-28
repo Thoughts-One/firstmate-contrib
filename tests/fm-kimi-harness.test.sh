@@ -443,18 +443,25 @@ test_kimi_spawn_refuses_shared_task_temp_root() {
 }
 
 test_kimi_spawn_ignores_stale_legacy_shared_temp_root() {
-  local id rec out rc legacy_tmp legacy_uid_tmp task_tmp launch_dir
-  id="kimi-legacytmp-z1-$$"
-  legacy_tmp="/tmp/fm-$id"
-  # The legacy root of another account's task whose id is "<uid>-<id>": task
-  # ids may start with digits and contain dashes, so a uid-namespaced name of
-  # the form /tmp/fm-<uid>-<id> would equal it exactly.
-  legacy_uid_tmp="/tmp/fm-$(id -u)-$id"
-  task_tmp=$(spawn_task_tmp "$id")
+  local id rec out rc legacy_tmp legacy_uid_tmp task_tmp launch_dir n=0
+  # These paths sit in the shared /tmp and the id embeds a reusable PID, so pick
+  # an id none of them already occupies rather than clearing another run's root.
+  while :; do
+    id="kimi-legacytmp-z1-$$-$n"
+    legacy_tmp="/tmp/fm-$id"
+    # The legacy root of another account's task whose id is "<uid>-<id>": task
+    # ids may start with digits and contain dashes, so a uid-namespaced name of
+    # the form /tmp/fm-<uid>-<id> would equal it exactly.
+    legacy_uid_tmp="/tmp/fm-$(id -u)-$id"
+    task_tmp=$(spawn_task_tmp "$id")
+    [ -e "$legacy_tmp" ] || [ -L "$legacy_tmp" ] || [ -e "$legacy_uid_tmp" ] || [ -L "$legacy_uid_tmp" ] ||
+      [ -e "$task_tmp" ] || [ -L "$task_tmp" ] || break
+    n=$((n + 1))
+    [ "$n" -lt 100 ] || fail "test setup error: no free legacy temp-root fixture id in /tmp"
+  done
   KIMI_RUNTIME_TASK_TMP=$task_tmp
   KIMI_RUNTIME_LEGACY_TMP=$legacy_tmp
   KIMI_RUNTIME_LEGACY_UID_TMP=$legacy_uid_tmp
-  rm -rf "$legacy_tmp" "$legacy_uid_tmp" "$task_tmp"
   # Stand in for a leftover directory another local account created at the
   # account-agnostic path fm-spawn used before it started namespacing by uid:
   # world-writable, so it would have tripped the unsafe-reuse refusal under

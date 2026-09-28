@@ -154,6 +154,25 @@ test_teardown_removes_tasktmp_dir() {
   pass "fm-teardown removes the dir pointed to by tasktmp= in meta"
 }
 
+test_teardown_removes_superseded_tasktmp_prior_dir() {
+  # A relaunch across a temp-root formula change records the older root as
+  # tasktmp_prior=; teardown must remove it along with the current root.
+  local id=td-prior-z5 task_tmp prior_tmp
+  task_tmp="$TMP_ROOT/fm-$id+uid$(id -u)"
+  prior_tmp="$TMP_ROOT/fm-$id"
+  mkdir -p "$task_tmp/gotmp" "$prior_tmp/gotmp"
+  printf 'leftover\n' > "$prior_tmp/gotmp/build-artifact"
+  local fake
+  fake=$(make_fake_root "$id" "$task_tmp")
+  printf 'tasktmp_prior=%s\n' "$prior_tmp" >> "$fake/state/$id.meta"
+  FM_HOME="$fake" bash "$fake/bin/fm-teardown.sh" "$id" >/dev/null 2>&1 \
+    || fail "teardown exited non-zero with a tasktmp_prior"
+  [ ! -e "$task_tmp" ] || fail "teardown did not remove the tasktmp dir ($task_tmp still exists)"
+  [ ! -e "$prior_tmp" ] \
+    || fail "teardown did not remove the superseded tasktmp_prior dir ($prior_tmp still exists)"
+  pass "fm-teardown removes the superseded root recorded as tasktmp_prior= in meta"
+}
+
 test_teardown_skips_gracefully_without_tasktmp() {
   # Backward compat: a meta from a pre-fix task has no tasktmp= line. Teardown must
   # not error and must not remove anything.
@@ -248,5 +267,6 @@ test_teardown_skips_gracefully_when_dir_missing() {
 }
 
 test_teardown_removes_tasktmp_dir
+test_teardown_removes_superseded_tasktmp_prior_dir
 test_teardown_skips_gracefully_without_tasktmp
 test_teardown_skips_gracefully_when_dir_missing

@@ -1304,6 +1304,7 @@ spawn_abort_cleanup() {
             [ -z "${YOLO:-}" ] || echo "yolo=$YOLO"
             [ -z "${BRANCH:-}" ] || echo "branch=$BRANCH"
             echo "tasktmp=${TASK_TMP:-}"
+            [ -z "${TASK_TMP_PRIOR:-}" ] || echo "tasktmp_prior=$TASK_TMP_PRIOR"
             echo "model=${MODEL:-default}"
             echo "effort=${EFFORT:-default}"
             echo "backend=orca"
@@ -4382,6 +4383,19 @@ if ! (umask 077 && mkdir "$TASK_TMP") 2>/dev/null; then
   fi
 fi
 mkdir -p "$TASK_TMP/gotmp"
+# A relaunch of a task first spawned under an older temp-root formula would
+# otherwise drop that root's only record when tasktmp= is rewritten below. Keep
+# it as tasktmp_prior= (carried across later relaunches) so teardown still
+# reaps and removes it.
+TASK_TMP_PRIOR=
+if [ "$RELAUNCH" -eq 1 ]; then
+  TASK_TMP_PRIOR=$(fm_meta_get "$RELAUNCH_META" tasktmp_prior)
+  task_tmp_recorded=$(fm_meta_get "$RELAUNCH_META" tasktmp)
+  if [ -n "$task_tmp_recorded" ] && [ "$task_tmp_recorded" != "$TASK_TMP" ]; then
+    TASK_TMP_PRIOR=$task_tmp_recorded
+  fi
+  [ "$TASK_TMP_PRIOR" != "$TASK_TMP" ] || TASK_TMP_PRIOR=
+fi
 
 # Per-harness turn-end hook where enabled: a file that touches
 # state/<id>.turn-ended when the agent finishes a turn. Worktree-resident hooks
@@ -4863,7 +4877,7 @@ SPAWN_META_PATH=$SPAWN_META_TMP
 preserve_relaunch_meta() {
   awk -F= '
     BEGIN {
-      split("window endpoint_task_id worktree project harness kind mode yolo branch tasktmp model effort account account_provider busy_gen spawn_gen traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id home projects control_relaunch_tx", keys, " ")
+      split("window endpoint_task_id worktree project harness kind mode yolo branch tasktmp tasktmp_prior model effort account account_provider busy_gen spawn_gen traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id home projects control_relaunch_tx", keys, " ")
       for (i in keys) owned[keys[i]] = 1
     }
     !($1 in owned)
@@ -4880,6 +4894,7 @@ preserve_relaunch_meta() {
   [ -z "$YOLO" ] || echo "yolo=$YOLO"
   [ -z "${BRANCH:-}" ] || echo "branch=$BRANCH"
   echo "tasktmp=$TASK_TMP"
+  [ -z "$TASK_TMP_PRIOR" ] || echo "tasktmp_prior=$TASK_TMP_PRIOR"
   echo "model=${MODEL:-default}"
   echo "effort=${EFFORT:-default}"
   # The worker account pin, only when this home declares one, so an unpinned
