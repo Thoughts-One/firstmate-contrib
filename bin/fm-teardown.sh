@@ -280,10 +280,13 @@
 #     whose CURRENT WORKING DIRECTORY is this task's own worktree or tasktmp
 #     root via `lsof -a -d cwd` (cheap: bounded by process count, not by
 #     walking the worktree's file tree) and sends TERM, then KILL after a short
-#     grace period to any survivor whose process identity still matches. Both
-#     roots are unique per task and never
-#     shared, so this can never reach another task's or the primary's
-#     processes. Idempotent: nothing left to find is a silent no-op.
+#     grace period to any survivor whose process identity still matches. The
+#     worktree and the current uid-namespaced tasktmp are unique per task and
+#     never shared, so this cannot reach another task's or the primary's
+#     processes. A recorded tasktmp_prior (an older-formula root left by a
+#     relaunch) is account-agnostic and may be shared with another local
+#     account, so it is a weaker guarantee. Idempotent: nothing left to find
+#     is a silent no-op.
 #   Fix 3 - sweep abandoned remote job workers. A remote job worker started
 #     from a worktree's own bin/ outlives that worktree's removal without
 #     being reachable by Fix 2, because its working directory is wherever it
@@ -2200,7 +2203,7 @@ reap_task_backend_process_group() {  # <label>
 }
 
 # Reap every process rooted (by cwd) under this task's own worktree or tasktmp
-# - both unique per task and never shared - before either is removed. TERM
+# (and a superseded tasktmp_prior, see Fix 2) before any is removed. TERM
 # first, then KILL after a short grace period for anything still alive; a
 # process that exits on its own between the two passes is simply absent from
 # the recheck. A missing lsof uses the backend process-group fallback; an lsof
