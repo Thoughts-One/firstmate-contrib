@@ -1,0 +1,7 @@
+$ fm-spawn.sh nosuchtask --relaunch --herdr-resume-lock-wait (lab home)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0NXexB
+error: --relaunch needs an existing task record; no /tmp/fm-lab.0NXexB/state/nosuchtask.meta
+rc=1
+$ fm-spawn.sh nosuchtask --relaunch --bogus-flag
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0NXexB
+error: --relaunch takes the task id only; its project or home comes from the task's own record
