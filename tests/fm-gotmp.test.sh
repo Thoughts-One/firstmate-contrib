@@ -139,7 +139,7 @@ META
 
 test_teardown_removes_tasktmp_dir() {
   local id=td-rm-z2
-  local task_tmp="$TMP_ROOT/fm-$id"
+  local task_tmp="$TMP_ROOT/fm-$id+uid$(id -u)"
   mkdir -p "$task_tmp/gotmp"
   printf 'leftover\n' > "$task_tmp/gotmp/build-artifact"
   local fake
@@ -154,45 +154,38 @@ test_teardown_removes_tasktmp_dir() {
   pass "fm-teardown removes the dir pointed to by tasktmp= in meta"
 }
 
-test_teardown_removes_superseded_tasktmp_prior_dir() {
-  # A relaunch across a temp-root formula change records the older root as
-  # tasktmp_prior=; teardown must remove it along with the current root.
-  local id=td-prior-z5 task_tmp prior_tmp
-  task_tmp="$TMP_ROOT/fm-$id+uid$(id -u)"
-  prior_tmp="$TMP_ROOT/fm-$id"
-  mkdir -p "$task_tmp/gotmp" "$prior_tmp/gotmp"
-  printf 'leftover\n' > "$prior_tmp/gotmp/build-artifact"
-  local fake
+test_teardown_leaves_a_legacy_named_tasktmp_alone() {
+  # A legacy /tmp/fm-<id> root has no uid namespace, so another account or home
+  # can hold the same path; even an owned real directory there is not this
+  # task's to reap or remove.
+  local id=td-legacy-z5 task_tmp fake
+  task_tmp="$TMP_ROOT/fm-$id"
+  mkdir -p "$task_tmp/gotmp"
+  printf 'keep\n' > "$task_tmp/gotmp/precious"
   fake=$(make_fake_root "$id" "$task_tmp")
-  printf 'tasktmp_prior=%s\n' "$prior_tmp" >> "$fake/state/$id.meta"
   FM_HOME="$fake" bash "$fake/bin/fm-teardown.sh" "$id" >/dev/null 2>&1 \
-    || fail "teardown exited non-zero with a tasktmp_prior"
-  [ ! -e "$task_tmp" ] || fail "teardown did not remove the tasktmp dir ($task_tmp still exists)"
-  [ ! -e "$prior_tmp" ] \
-    || fail "teardown did not remove the superseded tasktmp_prior dir ($prior_tmp still exists)"
-  pass "fm-teardown removes the superseded root recorded as tasktmp_prior= in meta"
+    || fail "teardown exited non-zero with a legacy-named tasktmp"
+  [ -f "$task_tmp/gotmp/precious" ] \
+    || fail "teardown removed a legacy-named tasktmp ($task_tmp)"
+  pass "fm-teardown leaves a legacy-named tasktmp= root alone"
 }
 
 test_teardown_ignores_symlinked_tasktmp() {
-  # A recorded root that is a symlink (as another local account could plant at a
-  # shared legacy /tmp/fm-<id> path) must be neither followed nor removed.
-  local id=td-link-z6 target task_tmp prior_tmp fake
+  # A recorded root that is a symlink (as another local account could plant at
+  # the predictable path) must be neither followed nor removed.
+  local id=td-link-z6 target task_tmp fake
   target="$TMP_ROOT/$id-target"
-  task_tmp="$TMP_ROOT/fm-$id"
-  prior_tmp="$TMP_ROOT/fm-$id-prior"
+  task_tmp="$TMP_ROOT/fm-$id+uid$(id -u)"
   mkdir -p "$target/gotmp"
   printf 'keep\n' > "$target/gotmp/precious"
   ln -s "$target" "$task_tmp"
-  ln -s "$target" "$prior_tmp"
   fake=$(make_fake_root "$id" "$task_tmp")
-  printf 'tasktmp_prior=%s\n' "$prior_tmp" >> "$fake/state/$id.meta"
   FM_HOME="$fake" bash "$fake/bin/fm-teardown.sh" "$id" >/dev/null 2>&1 \
     || fail "teardown exited non-zero with a symlinked tasktmp"
   [ -f "$target/gotmp/precious" ] \
     || fail "teardown followed a symlinked tasktmp and removed its target"
   [ -L "$task_tmp" ] || fail "teardown removed the symlinked tasktmp ($task_tmp)"
-  [ -L "$prior_tmp" ] || fail "teardown removed the symlinked tasktmp_prior ($prior_tmp)"
-  pass "fm-teardown leaves a symlinked tasktmp=/tasktmp_prior= root alone"
+  pass "fm-teardown leaves a symlinked tasktmp= root alone"
 }
 
 test_teardown_skips_gracefully_without_tasktmp() {
@@ -289,7 +282,7 @@ test_teardown_skips_gracefully_when_dir_missing() {
 }
 
 test_teardown_removes_tasktmp_dir
-test_teardown_removes_superseded_tasktmp_prior_dir
+test_teardown_leaves_a_legacy_named_tasktmp_alone
 test_teardown_ignores_symlinked_tasktmp
 test_teardown_skips_gracefully_without_tasktmp
 test_teardown_skips_gracefully_when_dir_missing
