@@ -459,6 +459,8 @@ Any of these preserves the candidate and lets session startup continue with at m
   Every earlier degradation on the fresh projected-create path (no session server, contended presentation lock, absent or ambiguous parent) still warns and continues flat.
 - Recovery of an existing presentation journal refuses by default when the shared presentation lock is contended, rather than falling back flat.
   Pass `fm-spawn.sh --herdr-resume-lock-wait` to opt that recovery into waiting for the lock instead, so concurrent recoveries can serialize.
+  The flag applies only to a fresh ship or scout spawn that recovers a journal.
+  `fm-spawn.sh --relaunch` reuses the recorded endpoint without taking the presentation lock, so the flag has no effect there.
   Dead-owner reclaim still stops the wait when a holder crashed.
   Unbounded blocking on the session lock is never the default.
 - Existing layouts are not force-renamed or rearranged.
