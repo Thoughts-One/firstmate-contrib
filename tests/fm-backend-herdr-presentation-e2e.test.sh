@@ -1408,11 +1408,15 @@ while [ ! -e "$LOCK_REFUSE_READY" ] && kill -0 "$LOCK_REFUSE_HOLDER_PID" 2>/dev/
 LOCK_REFUSE_FOCUS=$(focus_snapshot)
 if spawn_task "$LOCK_REFUSE_ID" "$HOME_DIR" "$RECOVERY_PROJECT_DIR" \
     > "$TMP_ROOT/lock-refuse-resume.out" 2> "$TMP_ROOT/lock-refuse-resume.err"; then
+  LOCK_REFUSE_STATUS=0
+else
+  LOCK_REFUSE_STATUS=$?
+fi
+if [ "$LOCK_REFUSE_STATUS" -eq 0 ]; then
   kill "$LOCK_REFUSE_HOLDER_PID" 2>/dev/null || true
   wait "$LOCK_REFUSE_HOLDER_PID" 2>/dev/null || true
   fail "default resumed identity succeeded under session lock contention instead of refusing: $(cat "$TMP_ROOT/lock-refuse-resume.out")"
 fi
-LOCK_REFUSE_STATUS=$?
 wait "$LOCK_REFUSE_HOLDER_PID" || fail "resume lock-refuse lock holder failed"
 [ "$LOCK_REFUSE_STATUS" -ne 0 ] \
   || fail "default resumed identity returned success under contention"
