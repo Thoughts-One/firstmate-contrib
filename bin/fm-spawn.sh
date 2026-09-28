@@ -1344,6 +1344,7 @@ spawn_abort_cleanup() {
             [ -z "${YOLO:-}" ] || echo "yolo=$YOLO"
             [ -z "${BRANCH:-}" ] || echo "branch=$BRANCH"
             echo "tasktmp=${TASK_TMP:-}"
+            [ -z "${TASK_TMP_PRIOR:-}" ] || echo "tasktmp_prior=$TASK_TMP_PRIOR"
             echo "model=${MODEL:-default}"
             echo "effort=${EFFORT:-default}"
             echo "backend=orca"
@@ -4473,6 +4474,58 @@ if ! (umask 077 && mkdir "$TASK_TMP") 2>/dev/null; then
   fi
 fi
 mkdir -p "$TASK_TMP/gotmp"
+# The full home-identity hash isolates equal task ids across homes: it names the
+# launch directory below and the owner marker of a superseded temp root.
+spawn_launch_home_token() {
+  local home=$1 root hash
+  root=$(cd "$home" 2>/dev/null && pwd -P) || root=$home
+  if command -v shasum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$root" | shasum -a 256 | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$root" | sha256sum | awk '{print $1}')
+  else
+    return 1
+  fi
+  case "$hash" in
+    *[!0-9a-fA-F]*|'') return 1 ;;
+  esac
+  printf '%s' "$hash"
+}
+# An older-formula root is account- and home-agnostic (/tmp/fm-<id>), so two
+# homes of one account can share it. Record it as this task's only when it is
+# this user's real directory and carries, or can first receive, an owner marker
+# naming this home and this task id; fm-teardown reaps and removes it only on
+# that exact marker. An existing marker is never overwritten.
+spawn_mark_prior_task_tmp() {  # <dir>
+  local dir=$1 owner
+  owner="$(spawn_launch_home_token "$FM_HOME") $ID" || return 1
+  if [ -L "$dir" ] || [ ! -d "$dir" ] || [ ! -O "$dir" ]; then
+    return 1
+  fi
+  if [ -e "$dir/.fm-task-owner" ] || [ -L "$dir/.fm-task-owner" ]; then
+    [ "$(cat "$dir/.fm-task-owner" 2>/dev/null)" = "$owner" ]
+    return
+  fi
+  (set -C; printf '%s\n' "$owner" > "$dir/.fm-task-owner") 2>/dev/null
+}
+# A relaunch of a task first spawned under an older temp-root formula would
+# otherwise drop that root's only record when tasktmp= is rewritten below. Keep
+# it as tasktmp_prior= (carried across later relaunches) so teardown still
+# reaps and removes it.
+TASK_TMP_PRIOR=
+if [ "$RELAUNCH" -eq 1 ]; then
+  TASK_TMP_PRIOR=$(fm_meta_get "$RELAUNCH_META" tasktmp_prior)
+  task_tmp_recorded=$(fm_meta_get "$RELAUNCH_META" tasktmp)
+  if [ -n "$task_tmp_recorded" ] && [ "$task_tmp_recorded" != "$TASK_TMP" ]; then
+    if spawn_mark_prior_task_tmp "$task_tmp_recorded"; then
+      TASK_TMP_PRIOR=$task_tmp_recorded
+    else
+      echo "warning: not recording superseded temp root $task_tmp_recorded for teardown: it is not a real directory owned by this user, or it already carries another home's or task's owner marker" >&2
+    fi
+  fi
+  [ "$TASK_TMP_PRIOR" != "$TASK_TMP" ] || TASK_TMP_PRIOR=
+fi
+
 # Per-harness turn-end hook where enabled: a file that touches
 # state/<id>.turn-ended when the agent finishes a turn. Worktree-resident hooks
 # and token pointers stay out of git's view so they never block teardown's dirty
@@ -4953,7 +5006,7 @@ SPAWN_META_PATH=$SPAWN_META_TMP
 preserve_relaunch_meta() {
   awk -F= '
     BEGIN {
-      split("window endpoint_task_id worktree project harness kind mode yolo branch tasktmp base_branch model effort account account_provider busy_gen spawn_gen traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id home projects control_relaunch_tx", keys, " ")
+      split("window endpoint_task_id worktree project harness kind mode yolo branch tasktmp tasktmp_prior base_branch model effort account account_provider busy_gen spawn_gen traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id home projects control_relaunch_tx", keys, " ")
       for (i in keys) owned[keys[i]] = 1
     }
     !($1 in owned)
@@ -4970,6 +5023,7 @@ preserve_relaunch_meta() {
   [ -z "$YOLO" ] || echo "yolo=$YOLO"
   [ -z "${BRANCH:-}" ] || echo "branch=$BRANCH"
   echo "tasktmp=$TASK_TMP"
+  [ -z "$TASK_TMP_PRIOR" ] || echo "tasktmp_prior=$TASK_TMP_PRIOR"
   [ -z "$BASE_BRANCH" ] || echo "base_branch=$BASE_BRANCH"
   echo "model=${MODEL:-default}"
   echo "effort=${EFFORT:-default}"
@@ -5380,21 +5434,6 @@ fi
 # Implement the launch-delivery contract in this script's header. The full
 # home-identity hash isolates equal task ids across homes, and the spawn token in
 # the final filename keeps a buffered source line bound to this incarnation.
-spawn_launch_home_token() {
-  local home=$1 root hash
-  root=$(cd "$home" 2>/dev/null && pwd -P) || root=$home
-  if command -v shasum >/dev/null 2>&1; then
-    hash=$(printf '%s' "$root" | shasum -a 256 | awk '{print $1}')
-  elif command -v sha256sum >/dev/null 2>&1; then
-    hash=$(printf '%s' "$root" | sha256sum | awk '{print $1}')
-  else
-    return 1
-  fi
-  case "$hash" in
-    *[!0-9a-fA-F]*|'') return 1 ;;
-  esac
-  printf '%s' "$hash"
-}
 LAUNCH_HOME_TOKEN=$(spawn_launch_home_token "$FM_HOME") || LAUNCH_HOME_TOKEN=
 if [ -z "$LAUNCH_HOME_TOKEN" ]; then
   echo "error: could not derive a home identity for the staged launch file" >&2
