@@ -19,6 +19,7 @@ TMP_ROOT=$(fm_test_tmproot fm-kimi-harness)
 KIMI_RUNTIME_TASK_TMP=
 KIMI_RUNTIME_LAUNCH_DIR=
 KIMI_RUNTIME_LEGACY_TMP=
+KIMI_RUNTIME_LEGACY_UID_TMP=
 PYTHON_BIN=$(command -v python3) || fail "test needs python3"
 PYTHON_BIN_DIR=$(dirname "$PYTHON_BIN")
 JQ_BIN=$(command -v jq) || fail "test needs jq"
@@ -34,6 +35,7 @@ cleanup_kimi_harness() {
   [ -z "$KIMI_RUNTIME_TASK_TMP" ] || fm_test_remove_tree "$KIMI_RUNTIME_TASK_TMP"
   [ -z "$KIMI_RUNTIME_LAUNCH_DIR" ] || fm_test_remove_tree "$KIMI_RUNTIME_LAUNCH_DIR"
   [ -z "$KIMI_RUNTIME_LEGACY_TMP" ] || fm_test_remove_tree "$KIMI_RUNTIME_LEGACY_TMP"
+  [ -z "$KIMI_RUNTIME_LEGACY_UID_TMP" ] || fm_test_remove_tree "$KIMI_RUNTIME_LEGACY_UID_TMP"
   fm_test_remove_tree "$TMP_ROOT"
 }
 trap cleanup_kimi_harness EXIT
@@ -350,10 +352,10 @@ path_mode() {
   stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1" 2>/dev/null
 }
 
-# Mirrors fm-spawn.sh's TASK_TMP formula (/tmp/fm-<uid>-<id>/) so the test can
+# Mirrors fm-spawn.sh's TASK_TMP formula (/tmp/fm-<id>+uid<uid>/) so the test can
 # predict the path a real spawn will create without hand-copying that logic.
 spawn_task_tmp() {
-  printf '/tmp/fm-%s-%s' "$(id -u)" "$1"
+  printf '/tmp/fm-%s+uid%s' "$1" "$(id -u)"
 }
 
 kimi_launch_dir() {
@@ -441,23 +443,26 @@ test_kimi_spawn_refuses_shared_task_temp_root() {
 }
 
 test_kimi_spawn_ignores_stale_legacy_shared_temp_root() {
-  local id rec out rc legacy_tmp task_tmp launch_dir
+  local id rec out rc legacy_tmp legacy_uid_tmp task_tmp launch_dir
   id="kimi-legacytmp-z1-$$"
   legacy_tmp="/tmp/fm-$id"
+  # The legacy root of another account's task whose id is "<uid>-<id>": task
+  # ids may start with digits and contain dashes, so a uid-namespaced name of
+  # the form /tmp/fm-<uid>-<id> would equal it exactly.
+  legacy_uid_tmp="/tmp/fm-$(id -u)-$id"
   task_tmp=$(spawn_task_tmp "$id")
   KIMI_RUNTIME_TASK_TMP=$task_tmp
   KIMI_RUNTIME_LEGACY_TMP=$legacy_tmp
-  rm -rf "$legacy_tmp" "$task_tmp"
+  KIMI_RUNTIME_LEGACY_UID_TMP=$legacy_uid_tmp
+  rm -rf "$legacy_tmp" "$legacy_uid_tmp" "$task_tmp"
   # Stand in for a leftover directory another local account created at the
   # account-agnostic path fm-spawn used before it started namespacing by uid:
   # world-writable, so it would have tripped the unsafe-reuse refusal under
   # the old formula. Constructing a directory actually owned by a different
   # real account needs root, which a test cannot assume, so unsafe
   # permissions stand in for foreign ownership here.
-  mkdir "$legacy_tmp"
-  chmod 777 "$legacy_tmp"
-  [ "$task_tmp" != "$legacy_tmp" ] \
-    || fail "test setup error: this account's uid-namespaced path collided with the legacy path"
+  mkdir "$legacy_tmp" "$legacy_uid_tmp"
+  chmod 777 "$legacy_tmp" "$legacy_uid_tmp"
   rec=$(make_spawn_case legacytmp "$id")
   read_spawn_record "$rec"
   launch_dir=$(kimi_launch_dir "$id" "$HOME_DIR")
@@ -471,10 +476,10 @@ test_kimi_spawn_ignores_stale_legacy_shared_temp_root() {
   assert_present "$task_tmp/gotmp" "spawn did not create its own uid-namespaced task temp root"
   [ "$(path_mode "$task_tmp")" = 700 ] \
     || fail "spawn's own task temp root was not private: $(path_mode "$task_tmp")"
-  [ "$(path_mode "$legacy_tmp")" = 777 ] \
-    || fail "spawn touched the unrelated stale legacy directory instead of leaving it alone"
-  rm -rf "$task_tmp" "$legacy_tmp"
-  pass "fm-spawn: a stale directory at the old account-agnostic temp path never blocks or is touched by a uid-namespaced spawn"
+  [ "$(path_mode "$legacy_tmp")" = 777 ] && [ "$(path_mode "$legacy_uid_tmp")" = 777 ] \
+    || fail "spawn touched an unrelated stale legacy directory instead of leaving it alone"
+  rm -rf "$task_tmp" "$legacy_tmp" "$legacy_uid_tmp"
+  pass "fm-spawn: no stale directory at an old account-agnostic temp path, including one whose task id starts with this uid, blocks or is touched by a uid-namespaced spawn"
 }
 
 test_kimi_hook_install_is_surgical_idempotent_and_removable() {
