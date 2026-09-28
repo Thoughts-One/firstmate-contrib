@@ -537,6 +537,22 @@ test_pane_exists_fails_on_empty_list_panes_output() {
   pass "fm_backend_zellij_pane_exists: fails on wholly empty list-panes output regardless of installed jq version"
 }
 
+test_tab_matches_label_fails_on_empty_list_tabs_output() {
+  local dir fb status
+  dir="$TMP_ROOT/tab-matches-label-empty-output"; mkdir -p "$dir/responses"
+  # 1: list-tabs --json -> succeeds with wholly empty stdout (a missing
+  # response file means "succeed with empty stdout"), the same jq 1.6 vs
+  # >=1.7 disagreement test_pane_exists_fails_on_empty_list_panes_output
+  # covers for list-panes.
+  fb=$(make_zellij_fakebin "$dir")
+  PATH="$fb:$PATH" FM_ZELLIJ_LOG="$dir/log" FM_ZELLIJ_RESPONSES="$dir/responses" \
+    FM_ZELLIJ_SESSION_LIST="firstmate" \
+    bash -c '. "$0/bin/backends/zellij.sh"; fm_backend_zellij_tab_matches_label firstmate 3 fm-task' "$ROOT"
+  status=$?
+  [ "$status" -ne 0 ] || fail "tab_matches_label should fail on wholly empty list-tabs output, not read it as a match"
+  pass "fm_backend_zellij_tab_matches_label: fails on wholly empty list-tabs output regardless of installed jq version"
+}
+
 test_capture_small_reads_use_viewport_and_trim() {
   local dir fb out
   dir="$TMP_ROOT/capture"; mkdir -p "$dir/responses"
@@ -1337,6 +1353,7 @@ test_create_task_creates_and_parses_ids
 test_create_task_restores_previously_active_tab
 test_create_task_no_restore_when_new_tab_was_already_active
 test_pane_exists_fails_on_empty_list_panes_output
+test_tab_matches_label_fails_on_empty_list_tabs_output
 test_capture_small_reads_use_viewport_and_trim
 test_capture_large_reads_use_full_scrollback_and_trim
 test_capture_fails_when_pane_absent
