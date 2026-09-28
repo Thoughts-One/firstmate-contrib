@@ -289,8 +289,10 @@
 #   Names are read once per spawn. For ordinary and remote secondmate launches,
 #   values expand in the destination pane. For a local secondmate spawn or
 #   relaunch, additional configured names except TRACEPARENT are captured from
-#   this launcher into a mode-0600 one-launch state file. Values never enter the
-#   launch text; unset names stay unset and empty values stay empty.
+#   this launcher into a mode-0600 one-launch state file named for this spawn's
+#   incarnation, so a delayed pane never sources a later relaunch's snapshot.
+#   Values never enter the launch text; unset names stay unset and empty values
+#   stay empty.
 #   The fixed operational floor is HOME PATH USER LOGNAME SHELL TERM COLORTERM
 #   LANG LC_ALL LC_CTYPE TMPDIR TMP TEMP GOTMPDIR, plus backend identity/routing:
 #   TMUX TMUX_PANE HERDR_ENV HERDR_SESSION HERDR_SOCKET_PATH HERDR_PANE_ID
@@ -1901,9 +1903,16 @@ launch_env_is_operational_name() {
   return 1
 }
 
+# The snapshot path carries this spawn's incarnation token, so a pane that runs
+# its launch late sources only its own snapshot and never one a later relaunch
+# of the same task id published.
 launch_env_snapshot_create() {
-  local tmp env_name env_value wrote=0
+  local tmp env_name env_value wrote=0 snapshot
   LAUNCH_ENV_FILE=
+  case "$SPAWN_GEN" in
+    *[!A-Za-z0-9.]*|'') echo "error: spawn incarnation token is not a usable launch environment snapshot nonce" >&2; return 1 ;;
+  esac
+  snapshot="$STATE/$ID.launch-env.$SPAWN_GEN"
   tmp=$(umask 077; mktemp "$STATE/.$ID.launch-env.XXXXXX") || {
     echo "error: could not create the private launch environment snapshot for $ID" >&2
     return 1
@@ -1925,15 +1934,19 @@ launch_env_snapshot_create() {
   done
   if [ "$wrote" = 0 ]; then
     rm -f "$tmp"
-    rm -f "$STATE/$ID.launch-env"
     return 0
   fi
-  if ! chmod 600 "$tmp" || ! mv -f "$tmp" "$STATE/$ID.launch-env"; then
+  if [ -e "$snapshot" ] || [ -L "$snapshot" ]; then
+    rm -f "$tmp"
+    echo "error: launch environment snapshot $snapshot already exists; refusing to replace it" >&2
+    return 1
+  fi
+  if ! chmod 600 "$tmp" || ! mv -f "$tmp" "$snapshot"; then
     rm -f "$tmp"
     echo "error: could not publish the private launch environment snapshot for $ID" >&2
     return 1
   fi
-  LAUNCH_ENV_FILE="$STATE/$ID.launch-env"
+  LAUNCH_ENV_FILE=$snapshot
 }
 
 resolve_pi_executable() {

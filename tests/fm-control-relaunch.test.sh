@@ -392,6 +392,7 @@ test_same_harness_relaunch_keeps_identity_and_reuses_the_endpoint() {
 
 test_secondmate_relaunch_uses_allowlisted_launcher_environment_not_the_reused_pane() {
   local dir home smhome out rc launch result expected value snapshot_mode
+  local first_snapshot first_launch second_launch
   dir=$(new_case allowlisted-env sm-env)
   home="$dir/home"
   smhome="$dir/smhome"
@@ -431,21 +432,42 @@ SH
   out=$(FM_TEST_ALLOWED="$value" FM_TEST_EMPTY='' FM_TEST_AMBIENT=must-not-cross \
     run_control "$dir" sm-env relaunch); rc=$?
   expect_code 0 "$rc" "an allowlisted secondmate relaunch should succeed"$'\n'"$out"
-  snapshot_mode=$(stat -c %a "$home/state/sm-env.launch-env" 2>/dev/null \
-    || stat -f %Lp "$home/state/sm-env.launch-env") \
+  set -- "$home/state/sm-env.launch-env".*
+  [ "$#" = 1 ] && [ -f "$1" ] || fail "the relaunch should publish exactly one launch snapshot: $*"
+  first_snapshot=$1
+  snapshot_mode=$(stat -c %a "$first_snapshot" 2>/dev/null || stat -f %Lp "$first_snapshot") \
     || fail "could not read the secondmate launch snapshot mode"
   [ "$snapshot_mode" = 600 ] || fail "the secondmate launch snapshot is not private"
-  launch=$(tail -n 1 "$dir/fake/literal")
-  result=$(env -i HOME="$dir/user-home" PATH="$dir/fakebin:/usr/bin:/bin" TERM=xterm \
-    TMUX=synthetic-pane GOTMPDIR=/synthetic/gotmp FM_TEST_ALLOWED=pane-value \
-    FM_TEST_EMPTY=pane-value FM_TEST_UNSET=pane-value FM_TEST_AMBIENT=pane-value \
-    /bin/sh -c "$launch") || fail "the relaunched secondmate command did not execute"
-  expected=$(printf '%s\n' "$value" '' '<unset>' '<unset>')
-  [ "$result" = "$expected" ] \
-    || fail "the relaunched secondmate did not receive exactly the launcher allowlist: $result"
-  assert_absent "$home/state/sm-env.launch-env" \
-    "the one-launch environment snapshot must be removed before the secondmate starts"
-  pass "fm-control relaunch: secondmate launcher values survive without admitting pane variables"
+  first_launch=$(tail -n 1 "$dir/fake/literal")
+
+  # A later relaunch of the same id runs before the first pane has sourced its
+  # launch. The delayed first launch must still read only its own snapshot.
+  out=$(FM_TEST_ALLOWED=second-incarnation FM_TEST_EMPTY='' \
+    run_control "$dir" sm-env relaunch); rc=$?
+  expect_code 0 "$rc" "a second allowlisted secondmate relaunch should succeed"$'\n'"$out"
+  second_launch=$(tail -n 1 "$dir/fake/literal")
+  [ "$second_launch" != "$first_launch" ] || fail "the second relaunch did not send a new launch"
+  [ -f "$first_snapshot" ] || fail "a later relaunch removed the pending launch's snapshot"
+  set -- "$home/state/sm-env.launch-env".*
+  [ "$#" = 2 ] || fail "each incarnation should own its own launch snapshot: $*"
+
+  for launch in "$first_launch" "$second_launch"; do
+    result=$(env -i HOME="$dir/user-home" PATH="$dir/fakebin:/usr/bin:/bin" TERM=xterm \
+      TMUX=synthetic-pane GOTMPDIR=/synthetic/gotmp FM_TEST_ALLOWED=pane-value \
+      FM_TEST_EMPTY=pane-value FM_TEST_UNSET=pane-value FM_TEST_AMBIENT=pane-value \
+      /bin/sh -c "$launch") || fail "the relaunched secondmate command did not execute"
+    if [ "$launch" = "$first_launch" ]; then
+      expected=$(printf '%s\n' "$value" '' '<unset>' '<unset>')
+    else
+      expected=$(printf '%s\n' second-incarnation '' '<unset>' '<unset>')
+    fi
+    [ "$result" = "$expected" ] \
+      || fail "a relaunched secondmate did not receive exactly its own launcher allowlist: $result"
+  done
+  set -- "$home/state/sm-env.launch-env".*
+  [ "$#" = 1 ] && [ ! -e "$1" ] \
+    || fail "each one-launch environment snapshot must be removed before its secondmate starts: $*"
+  pass "fm-control relaunch: secondmate launcher values survive, bound to their own incarnation, without admitting pane variables"
 }
 
 test_remote_secondmate_relaunch_keeps_destination_pane_allowlist() {
@@ -487,7 +509,8 @@ SH
   out=$(FM_REMOTE_JOB_ACTIVE=1 FM_TEST_ALLOWED=launcher-value FM_TEST_EMPTY=launcher-value \
     FM_TEST_AMBIENT=launcher-value run_control "$dir" remote-sm-env relaunch); rc=$?
   expect_code 0 "$rc" "a remote secondmate relaunch should succeed"$'\n'"$out"
-  assert_absent "$home/state/remote-sm-env.launch-env" \
+  set -- "$home/state/remote-sm-env.launch-env".*
+  assert_absent "$1" \
     "a remote secondmate relaunch must not snapshot the stripped remote command environment"
   launch=$(tail -n 1 "$dir/fake/literal")
   result=$(env -i HOME="$dir/user-home" PATH="$dir/fakebin:/usr/bin:/bin" TERM=xterm \
@@ -548,8 +571,9 @@ SH
   [ "$meta_tp" != "$launcher_traceparent" ] \
     || fail "the recorded carrier must never be the launcher's own ambient TRACEPARENT"
 
-  snapshot="$home/state/sm-tp.launch-env"
-  [ -f "$snapshot" ] || fail "the allowlisted FM_TEST_ALLOWED value should still produce a launch snapshot"
+  set -- "$home/state/sm-tp.launch-env".*
+  snapshot=$1
+  [ "$#" = 1 ] && [ -f "$snapshot" ] || fail "the allowlisted FM_TEST_ALLOWED value should still produce a launch snapshot"
   snapshot_mode=$(stat -c %a "$snapshot" 2>/dev/null || stat -f %Lp "$snapshot") \
     || fail "could not read the secondmate launch snapshot mode"
   [ "$snapshot_mode" = 600 ] || fail "the secondmate launch snapshot is not private"

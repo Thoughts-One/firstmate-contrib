@@ -1361,7 +1361,8 @@ SH
     expect_code 0 "$status" "allowlist=$setting spawn should succeed: $out"
     launch=$(cat "$LAUNCH_LOG")
     assert_not_contains "$launch" "launcher-value" "allowlist=$setting leaked a launcher value into pane text"
-    [ ! -e "$HOME_DIR/state/$id.launch-env" ] \
+    set -- "$HOME_DIR/state/$id.launch-env".*
+    [ ! -e "$1" ] \
       || fail "allowlist=$setting created a source snapshot for an ordinary raw-command ship"
     for pane_shell in /bin/sh /bin/bash /bin/zsh; do
       [ -x "$pane_shell" ] || continue
