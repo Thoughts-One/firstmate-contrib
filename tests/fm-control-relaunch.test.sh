@@ -508,6 +508,72 @@ test_relaunch_records_only_the_uid_namespaced_task_temp_root() {
   pass "fm-control relaunch: the legacy temp root is replaced by the uid-namespaced one"
 }
 
+# The owner marker fm-spawn writes into a superseded root: the sha256 of the
+# home's physical path, then the task id.
+owner_marker_for() {  # <home> <id>
+  local root hash
+  root=$(cd "$1" && pwd -P)
+  if command -v shasum >/dev/null 2>&1; then
+    hash=$(printf '%s' "$root" | shasum -a 256 | awk '{print $1}')
+  else
+    hash=$(printf '%s' "$root" | sha256sum | awk '{print $1}')
+  fi
+  printf '%s %s' "$hash" "$2"
+}
+
+test_relaunch_keeps_and_marks_a_superseded_task_temp_root_for_teardown() {
+  local dir out rc id=rl46 legacy_tmp
+  dir=$(new_case prior-tasktmp "$id")
+  add_ship_task "$dir" "$id" claude
+  # A task spawned before the uid-namespaced temp root recorded the older
+  # account-agnostic path; relaunch rewrites tasktmp= to the current formula.
+  legacy_tmp="$dir/legacy-tmp/fm-$id"
+  mkdir -p "$legacy_tmp"
+  sed -i.bak "s|^tasktmp=.*|tasktmp=$legacy_tmp|" "$dir/home/state/$id.meta"
+  rm -f "$dir/home/state/$id.meta.bak"
+
+  out=$(run_control "$dir" "$id" relaunch --note "continue after upgrade"); rc=$?
+  expect_code 0 "$rc" "relaunch should succeed across a temp-root formula change"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" tasktmp)" = "/tmp/fm-$id+uid$(id -u)" ] \
+    || fail "relaunch must record the current temp root"
+  [ "$(meta_field "$dir" "$id" tasktmp_prior)" = "$legacy_tmp" ] \
+    || fail "relaunch must keep the superseded temp root recorded so teardown can remove it"
+  [ "$(cat "$legacy_tmp/.fm-task-owner")" = "$(owner_marker_for "$dir/home" "$id")" ] \
+    || fail "relaunch must mark the superseded temp root with this home's identity and the task id"
+
+  out=$(run_control "$dir" "$id" relaunch --note "continue again"); rc=$?
+  expect_code 0 "$rc" "a second relaunch should succeed"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" tasktmp_prior)" = "$legacy_tmp" ] \
+    || fail "a later relaunch must carry the superseded temp root forward"
+  [ "$(grep -c '^tasktmp_prior=' "$dir/home/state/$id.meta")" = 1 ] \
+    || fail "the superseded temp root must be recorded exactly once"
+  pass "fm-control relaunch: a superseded temp root is marked and stays recorded as tasktmp_prior across relaunches"
+}
+
+test_relaunch_does_not_record_a_superseded_temp_root_marked_for_another_owner() {
+  local dir out rc id=rl47 legacy_tmp other
+  dir=$(new_case foreign-tasktmp "$id")
+  add_ship_task "$dir" "$id" claude
+  legacy_tmp="$dir/legacy-tmp/fm-$id"
+  mkdir -p "$legacy_tmp"
+  other="$(printf '%064d' 0) $id"
+  printf '%s' "$other" > "$legacy_tmp/.fm-task-owner"
+  sed -i.bak "s|^tasktmp=.*|tasktmp=$legacy_tmp|" "$dir/home/state/$id.meta"
+  rm -f "$dir/home/state/$id.meta.bak"
+
+  out=$(run_control "$dir" "$id" relaunch --note "continue after upgrade" 2>&1); rc=$?
+  expect_code 0 "$rc" "relaunch should still succeed"$'\n'"$out"
+  [ -z "$(meta_field "$dir" "$id" tasktmp_prior)" ] \
+    || fail "relaunch must not record a superseded root that another home marked"
+  [ "$(cat "$legacy_tmp/.fm-task-owner")" = "$other" ] \
+    || fail "relaunch must never overwrite an existing owner marker"
+  case "$out" in
+    *"not recording superseded temp root"*) ;;
+    *) fail "relaunch must warn when it does not record a superseded temp root"$'\n'"$out" ;;
+  esac
+  pass "fm-control relaunch: a superseded temp root marked for another owner is neither recorded nor re-marked"
+}
+
 test_relaunch_serializes_concurrent_durable_metadata_publication() {
   local dir control_pid link_pid rc i=0 traceparent prepare launch_release waiting ready release
   dir=$(new_case metadata-race rl28)
@@ -2411,6 +2477,8 @@ test_relaunch_refuses_before_exit_when_the_composer_state_is_unproven
 test_relaunch_from_linked_home_preserves_recorded_worktree
 test_relaunch_preserves_durable_task_metadata
 test_relaunch_records_only_the_uid_namespaced_task_temp_root
+test_relaunch_keeps_and_marks_a_superseded_task_temp_root_for_teardown
+test_relaunch_does_not_record_a_superseded_temp_root_marked_for_another_owner
 test_relaunch_serializes_concurrent_durable_metadata_publication
 test_disabled_relaunch_clears_prior_trace_context
 test_relaunch_appends_the_progress_note_to_the_instructions
