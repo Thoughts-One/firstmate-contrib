@@ -406,10 +406,12 @@ Verify projected workspace behavior for $id.
 EOF
 }
 
-spawn_task() {  # <id> <home> <project>
-  local id=$1 home=$2 project=$3
+spawn_task() {  # <id> <home> <project> [deadline_seconds]
+  local id=$1 home=$2 project=$3 deadline_seconds=${4:-}
+  local -a deadline_cmd=()
+  [ -z "$deadline_seconds" ] || deadline_cmd=(timeout "$deadline_seconds")
   FM_GATE_REFUSE_BYPASS=1 FM_SPAWN_NO_GUARD=1 FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" \
-    "$ROOT/bin/fm-spawn.sh" "$id" "$project" "sh -c 'while :; do sleep 60; done'" --mode no-mistakes --yolo off --backend herdr
+    "${deadline_cmd[@]}" "$ROOT/bin/fm-spawn.sh" "$id" "$project" "sh -c 'while :; do sleep 60; done'" --mode no-mistakes --yolo off --backend herdr
 }
 
 finish_concurrent_spawn() {  # <id> <status> <stdout> <stderr>
@@ -1384,15 +1386,20 @@ LOCK_WAIT_HOLDER_PID=$!
 while [ ! -e "$LOCK_WAIT_READY" ] && kill -0 "$LOCK_WAIT_HOLDER_PID" 2>/dev/null; do sleep 0.01; done
 [ -e "$LOCK_WAIT_READY" ] || fail "could not hold the session presentation lock for resume lock-wait"
 
+LOCK_WAIT_DEADLINE_SECONDS=$((LOCK_WAIT_HOLD_SECONDS + 60))
 LOCK_WAIT_FOCUS=$(focus_snapshot)
 LOCK_WAIT_START=$(date +%s)
-if spawn_task "$LOCK_WAIT_ID" "$HOME_DIR" "$RECOVERY_PROJECT_DIR" > "$TMP_ROOT/lock-wait-resume.out" 2> "$TMP_ROOT/lock-wait-resume.err"; then
+if spawn_task "$LOCK_WAIT_ID" "$HOME_DIR" "$RECOVERY_PROJECT_DIR" "$LOCK_WAIT_DEADLINE_SECONDS" \
+    > "$TMP_ROOT/lock-wait-resume.out" 2> "$TMP_ROOT/lock-wait-resume.err"; then
   LOCK_WAIT_STATUS=0
 else
   LOCK_WAIT_STATUS=$?
 fi
 LOCK_WAIT_ELAPSED=$(( $(date +%s) - LOCK_WAIT_START ))
 wait "$LOCK_WAIT_HOLDER_PID" || fail "resume lock-wait lock holder failed"
+if [ "$LOCK_WAIT_STATUS" -eq 124 ]; then
+  fail "resumed recovery hung for over ${LOCK_WAIT_DEADLINE_SECONDS}s instead of waiting out a ${LOCK_WAIT_HOLD_SECONDS}s session lock hold"
+fi
 [ "$LOCK_WAIT_STATUS" -eq 0 ] \
   || fail "a resumed identity refused instead of waiting out session lock contention: $(cat "$TMP_ROOT/lock-wait-resume.err")"
 [ "$LOCK_WAIT_ELAPSED" -ge $((LOCK_WAIT_HOLD_SECONDS - 5)) ] \
