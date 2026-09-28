@@ -1,0 +1,16 @@
+ok - bootstrap network launch stagger (config present): staggered gaps=['0.312', '0.503'] mean=0.408 span=0.815 distinct-host gaps=['0.055', '0.024'] span=0.078 - repeated launches to the configured host are staggered, other hosts stay parallel, no retry
+ok - bootstrap network launch stagger (config absent): staggered gaps=['0.513', '0.351'] mean=0.432 span=0.864 absent-config gaps=['0.005', '0.259'] span=0.264 - repeated launches to the same host are never staggered without the config file
+# all fm-bootstrap-network-parallel tests passed
+exit=0
+ok - bootstrap network launch stagger (config present): staggered gaps=['0.414', '0.403'] mean=0.409 span=0.817 distinct-host gaps=['0.006', '0.018'] span=0.024 - repeated launches to the configured host are staggered, other hosts stay parallel, no retry
+ok - bootstrap network launch stagger (config absent): staggered gaps=['0.425', '0.406'] mean=0.415 span=0.830 absent-config gaps=['0.011', '0.011'] span=0.021 - repeated launches to the same host are never staggered without the config file
+# all fm-bootstrap-network-parallel tests passed
+exit=0
+ok - bootstrap network launch stagger (config present): staggered gaps=['0.428', '0.390'] mean=0.409 span=0.818 distinct-host gaps=['0.002', '0.024'] span=0.026 - repeated launches to the configured host are staggered, other hosts stay parallel, no retry
+ok - bootstrap network launch stagger (config absent): staggered gaps=['0.494', '0.412'] mean=0.453 span=0.906 absent-config gaps=['0.001', '0.005'] span=0.006 - repeated launches to the same host are never staggered without the config file
+# all fm-bootstrap-network-parallel tests passed
+exit=0
+ok - bootstrap network launch stagger (config present): staggered gaps=['0.462', '0.398'] mean=0.430 span=0.860 distinct-host gaps=['0.003', '0.018'] span=0.021 - repeated launches to the configured host are staggered, other hosts stay parallel, no retry
+ok - bootstrap network launch stagger (config absent): staggered gaps=['0.417', '0.421'] mean=0.419 span=0.838 absent-config gaps=['0.000', '0.011'] span=0.011 - repeated launches to the same host are never staggered without the config file
+# all fm-bootstrap-network-parallel tests passed
+exit=0

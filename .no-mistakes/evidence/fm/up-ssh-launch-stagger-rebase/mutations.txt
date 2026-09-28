@@ -1,0 +1,13 @@
+## no-stagger (tenths always 0): not ok - launch spacing did not isolate the configured-host stagger
+repeated-host launches were not staggered: mean gap 0.009s < 0.20s
+repeated-host launches were not staggered: span 0.017s < 0.40s
+repeated-host launches shared a start instant: smallest gap 0.004s < 0.05s
+distinct-host launches were spaced like staggered ones: span 0.023s >= staggered mean gap 0.009s
+## weak stagger 0.1s: not ok - launch spacing did not isolate the configured-host stagger
+repeated-host launches were not staggered: mean gap 0.118s < 0.20s
+repeated-host launches were not staggered: span 0.235s < 0.40s
+## 0/0/0.8 schedule: not ok - launch spacing did not isolate the configured-host stagger
+repeated-host launches shared a start instant: smallest gap 0.000s < 0.05s
+## stagger all hosts: not ok - launch spacing did not isolate the configured-host stagger
+distinct-host launches were spaced like staggered ones: span 0.819s >= staggered mean gap 0.416s
+distinct-host launches lost their parallelism: span 0.819s >= 0.60s
