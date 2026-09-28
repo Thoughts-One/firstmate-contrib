@@ -1,0 +1,4 @@
+a+b rejected
+x+uid1000 rejected
+ok-1 valid
+1000-ok valid
