@@ -1472,6 +1472,31 @@ SH
   pass "secondmate launch inherits the allowlist for subsequent worker launches"
 }
 
+test_secondmate_spawn_forwards_an_allowlisted_traceparent_from_the_pane() {
+  local rec id sm out status result
+  id=env-secondmate-tp
+  rec=$(make_spawn_case "$id" codex "$id")
+  read_case_record "$rec"
+  printf '%s\n' TRACEPARENT FM_TEST_ALLOWED > "$HOME_DIR/config/launch-env-allowlist"
+  sm="$CASE_DIR/secondmate-home"
+  make_seeded_secondmate_home "$sm" "$id"
+  out=$(TRACEPARENT=launcher-carrier FM_TEST_ALLOWED=launcher-value \
+    run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$sm" --secondmate)
+  status=$?
+  expect_code 0 "$status" "secondmate with an allowlisted TRACEPARENT should spawn: $out"
+  cat > "$FAKEBIN_DIR/codex" <<'SH'
+#!/bin/sh
+printf '%s\n' "${TRACEPARENT-unset}" "${FM_TEST_ALLOWED-unset}"
+SH
+  chmod +x "$FAKEBIN_DIR/codex"
+  result=$(env -i HOME="$HOME_DIR/user-home" PATH="$FAKEBIN_DIR:$PATH" TRACEPARENT=pane-carrier \
+    FM_TEST_ALLOWED=pane-value /bin/sh -c "$(cat "$LAUNCH_LOG")") \
+    || fail "secondmate's emitted command failed"
+  [ "$result" = "pane-carrier"$'\nlauncher-value' ] \
+    || fail "an allowlisted TRACEPARENT must come from the pane when no carrier is set: $result"
+  pass "secondmate spawn forwards an allowlisted TRACEPARENT from the pane when tracing is off"
+}
+
 run_launch_environment_inheritance() {
   local route=$1 home=$2 dest=$3 fakebin=$4 generation=$5
   if [ "$route" = local ]; then
@@ -1556,6 +1581,7 @@ test_launch_environment_allowlist
 test_launch_environment_invalid_config_refuses
 test_launch_environment_inaccessible_config_refuses
 test_launch_environment_inherited_by_secondmate
+test_secondmate_spawn_forwards_an_allowlisted_traceparent_from_the_pane
 test_launch_environment_inheritance_preserves_on_source_errors
 
 test_worker_launch_delivers_role_scope() {

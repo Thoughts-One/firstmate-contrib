@@ -1923,22 +1923,24 @@ launch_env_snapshot_create() {
   done
   # Values come from LAUNCHER_EXPORTS in a clean shell, never from this
   # script's own variables. Only names the launcher exported are written.
+  # The exports reach the shell on stdin, so no value appears in any argv.
   # The validated names split deliberately into separate arguments.
   # shellcheck disable=SC2016,SC2086
-  if ! env -i "$BASH" --noprofile --norc -c '
-    unset PWD OLDPWD SHLVL
+  if ! printf '%s\n' "$LAUNCHER_EXPORTS" | env -i "$BASH" --noprofile --norc -c '
     eval "$1"
-    eval "$2"
-    shift 2
-    for env_name; do
-      case $(declare -p "$env_name" 2>/dev/null) in
-      "declare -x $env_name="*) ;;
+    shift
+    IFS= read -r -d "" __fm_exports
+    unset PWD OLDPWD SHLVL
+    eval "$__fm_exports"
+    for __fm_name; do
+      case $(declare -p "$__fm_name" 2>/dev/null) in
+      "declare -x $__fm_name="*) ;;
       *) continue ;;
       esac
-      eval "env_value=\${$env_name}"
-      printf "export %s=%s\n" "$env_name" "$(shell_quote "$env_value")" || exit 1
+      eval "__fm_value=\${$__fm_name}"
+      printf "export %s=%s\n" "$__fm_name" "$(shell_quote "$__fm_value")" || exit 1
     done
-  ' fm-spawn-launch-env "$LAUNCHER_EXPORTS" "$(declare -f shell_quote)" $snapshot_names > "$tmp"; then
+  ' fm-spawn-launch-env "$(declare -f shell_quote)" $snapshot_names > "$tmp"; then
     rm -f "$tmp"
     echo "error: could not write the private launch environment snapshot for $ID" >&2
     return 1
@@ -5353,6 +5355,11 @@ if [ "$LAUNCH_ENV_ENABLED" = 1 ]; then
   if [ "$KIND" = secondmate ] && [ "${FM_REMOTE_JOB_ACTIVE:-0}" != 1 ]; then
     launch_env_snapshot_create || exit 1
     launch_env_names=$(launch_env_operational_names)
+    # TRACEPARENT stays out of the snapshot; an allowlisted one keeps its
+    # existing pane expansion, and the dedicated carrier below still wins.
+    case $'\n'"$LAUNCH_ENV_NAMES"$'\n' in
+    *$'\n'TRACEPARENT$'\n'*) launch_env_names=$(printf '%s\nTRACEPARENT\n' "$launch_env_names") ;;
+    esac
   else
     launch_env_names=$(printf '%s\n%s\n' "$(launch_env_operational_names)" "$LAUNCH_ENV_NAMES")
   fi

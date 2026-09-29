@@ -391,7 +391,7 @@ test_same_harness_relaunch_keeps_identity_and_reuses_the_endpoint() {
 }
 
 test_secondmate_relaunch_uses_allowlisted_launcher_environment_not_the_reused_pane() {
-  local dir home smhome out rc launch result expected value snapshot_mode
+  local dir home smhome out rc launch result expected value snapshot_mode leaked
   dir=$(new_case allowlisted-env sm-env)
   home="$dir/home"
   smhome="$dir/smhome"
@@ -429,9 +429,23 @@ printf '%s\n' "${FM_TEST_ALLOWED-<unset>}" "${FM_TEST_EMPTY-<unset>}" \
 SH
   chmod +x "$dir/fakebin/claude"
 
+  # Record the argv of every `env` call: the launcher environment must reach
+  # the snapshot shell without appearing in any process argument list.
+  cat > "$dir/fakebin/env" <<'SH'
+#!/bin/sh
+printf '%s\0' "$@" >> "$FM_FAKE_DIR/env-argv"
+exec /usr/bin/env "$@"
+SH
+  chmod +x "$dir/fakebin/env"
+
   out=$(FM_TEST_ALLOWED="$value" FM_TEST_EMPTY='' FM_TEST_AMBIENT=must-not-cross \
     MODEL=launcher-model run_control "$dir" sm-env relaunch); rc=$?
   expect_code 0 "$rc" "an allowlisted secondmate relaunch should succeed"$'\n'"$out"
+  [ -s "$dir/fake/env-argv" ] || fail "the snapshot shell was not launched through env"
+  for leaked in 'source value' must-not-cross launcher-model; do
+    ! grep -qF -- "$leaked" "$dir/fake/env-argv" \
+      || fail "launcher environment value '$leaked' appeared in a process argv during snapshot capture"
+  done
   snapshot_mode=$(stat -c %a "$home/state/sm-env.launch-env" 2>/dev/null \
     || stat -f %Lp "$home/state/sm-env.launch-env") \
     || fail "could not read the secondmate launch snapshot mode"
