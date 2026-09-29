@@ -289,8 +289,9 @@
 #   Names are read once per spawn. For ordinary and remote secondmate launches,
 #   values expand in the destination pane. For a local secondmate spawn or
 #   relaunch, additional configured names except TRACEPARENT are captured from
-#   this launcher into a mode-0600 one-launch state file. Values never enter the
-#   launch text; unset names stay unset and empty values stay empty.
+#   this launcher into a mode-0600 one-launch state file; an allowlisted
+#   TRACEPARENT still expands in the pane and the dedicated carrier wins. Values
+#   never enter the launch text; unset names stay unset and empty values stay empty.
 #   The fixed operational floor is HOME PATH USER LOGNAME SHELL TERM COLORTERM
 #   LANG LC_ALL LC_CTYPE TMPDIR TMP TEMP GOTMPDIR, plus backend identity/routing:
 #   TMUX TMUX_PANE HERDR_ENV HERDR_SESSION HERDR_SOCKET_PATH HERDR_PANE_ID

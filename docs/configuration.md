@@ -935,7 +935,7 @@ The command shell and worker may still create their own variables.
 
 Allowed values come from the destination pane at execution time; they are neither copied from the invoking Firstmate process nor written into the launch command.
 The exception is a local secondmate spawn or relaunch: additional allowlisted values are captured from the process running `fm-spawn.sh` into a private one-launch file that the secondmate removes before starting.
-For a local secondmate, an allowlisted `TRACEPARENT` is not captured as an ambient grant; the dedicated [trace-context contract](trace-context.md) remains authoritative.
+An allowlisted `TRACEPARENT` is never captured from the launcher; it keeps the destination-pane behavior, and the dedicated [trace-context contract](trace-context.md) carrier wins when set.
 This lets a persistent local secondmate recover with credentials available to its launching process instead of depending on stale pane state.
 Listing a name does not provision it in a daemon's environment or transfer credentials to another machine.
 Remote secondmates keep the destination-pane behavior because the remote command boundary intentionally starts with an empty environment and does not transfer credentials between machines.
