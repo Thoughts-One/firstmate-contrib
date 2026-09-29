@@ -1,0 +1,32 @@
+== valid name
+rc=1
+== backtick
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+rc=1
+== newline
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+rc=1
+== space
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+rc=1
+== equals-form empty
+error: --herdr-retire-session requires a non-empty session name
+rc=1
+== with lab
+error: --herdr-lab and --herdr-retire-session are mutually exclusive: the lab helper only ever operates on a session it generated itself, while the retirement helper only ever operates on a pre-existing session it did not create
+rc=1
+10:# Herdr retirement - HARD SAFETY CONTRACT
+11-This brief was explicitly scaffolded with `--herdr-retire-session old-sess_1.x` because the task's only Herdr lifecycle action is guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
+12-
+13-1. Run only `'/home/kai/.no-mistakes/worktrees/7605832e1988/01M3NFGXR570TQ4FBJKS5PA52S/bin/fm-herdr-session-retire.sh' 'old-sess_1.x'` to stop it.
+14-   It refuses the target unless it is empty, refuses `default`, `fm-remote`, and every `fm-lab-*` name, snapshots and re-verifies every other session before and after the call, and never deletes, restarts, or force-stops anything.
+15-2. Before that call, rule out concurrent writers against the target: Herdr has no conditional stop, so the helper's emptiness check is best-effort and another client can add a workspace between the final check and the stop.
+16-3. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.
+17-4. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.
+18-5. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.
+19-
+20-Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.
+21-The captain fleet uses the running `default` session.
+22-
+23-# Setup
+24-You are in a disposable git worktree of firstmate, at a detached HEAD on a clean default branch.

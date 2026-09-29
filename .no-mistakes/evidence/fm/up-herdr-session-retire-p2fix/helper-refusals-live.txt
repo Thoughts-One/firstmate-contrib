@@ -1,0 +1,18 @@
+== 'default'
+fm-herdr-session-retire: refusing session name 'default'
+rc=1
+== 'fm-remote'
+fm-herdr-session-retire: refusing session name 'fm-remote'
+rc=1
+== 'fm-lab-foo'
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-foo
+rc=1
+== ''
+fm-herdr-session-retire: refusing an empty session name
+rc=1
+== no args
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+== two args
+rc=2
