@@ -398,7 +398,8 @@ test_secondmate_relaunch_uses_allowlisted_launcher_environment_not_the_reused_pa
   mkdir -p "$home/config"
   printf 'claude\n' > "$home/config/secondmate-harness"
   # MODEL is also a variable inside fm-spawn.sh; the launcher's value must win.
-  printf '%s\n' FM_TEST_ALLOWED FM_TEST_EMPTY FM_TEST_UNSET MODEL > "$home/config/launch-env-allowlist"
+  # __fm_name was the snapshot shell's own loop variable; it must not collide.
+  printf '%s\n' FM_TEST_ALLOWED FM_TEST_EMPTY FM_TEST_UNSET MODEL __fm_name > "$home/config/launch-env-allowlist"
   fm_git_worktree "$dir/proj" "$smhome" sm-env-branch
   mkdir -p "$smhome/state" "$smhome/data" "$smhome/bin"
   printf 'sm-env\n' > "$smhome/.fm-secondmate-home"
@@ -425,7 +426,8 @@ test_secondmate_relaunch_uses_allowlisted_launcher_environment_not_the_reused_pa
   cat > "$dir/fakebin/claude" <<'SH'
 #!/bin/sh
 printf '%s\n' "${FM_TEST_ALLOWED-<unset>}" "${FM_TEST_EMPTY-<unset>}" \
-  "${FM_TEST_UNSET-<unset>}" "${FM_TEST_AMBIENT-<unset>}" "${MODEL-<unset>}"
+  "${FM_TEST_UNSET-<unset>}" "${FM_TEST_AMBIENT-<unset>}" "${MODEL-<unset>}" \
+  "${__fm_name-<unset>}"
 SH
   chmod +x "$dir/fakebin/claude"
 
@@ -439,7 +441,7 @@ SH
   chmod +x "$dir/fakebin/env"
 
   out=$(FM_TEST_ALLOWED="$value" FM_TEST_EMPTY='' FM_TEST_AMBIENT=must-not-cross \
-    MODEL=launcher-model run_control "$dir" sm-env relaunch); rc=$?
+    MODEL=launcher-model __fm_name=launcher-loop-name run_control "$dir" sm-env relaunch); rc=$?
   expect_code 0 "$rc" "an allowlisted secondmate relaunch should succeed"$'\n'"$out"
   [ -s "$dir/fake/env-argv" ] || fail "the snapshot shell was not launched through env"
   for leaked in 'source value' must-not-cross launcher-model; do
@@ -454,8 +456,8 @@ SH
   result=$(env -i HOME="$dir/user-home" PATH="$dir/fakebin:/usr/bin:/bin" TERM=xterm \
     TMUX=synthetic-pane GOTMPDIR=/synthetic/gotmp FM_TEST_ALLOWED=pane-value \
     FM_TEST_EMPTY=pane-value FM_TEST_UNSET=pane-value FM_TEST_AMBIENT=pane-value \
-    MODEL=pane-model /bin/sh -c "$launch") || fail "the relaunched secondmate command did not execute"
-  expected=$(printf '%s\n' "$value" '' '<unset>' '<unset>' launcher-model)
+    MODEL=pane-model __fm_name=pane-loop-name /bin/sh -c "$launch") || fail "the relaunched secondmate command did not execute"
+  expected=$(printf '%s\n' "$value" '' '<unset>' '<unset>' launcher-model launcher-loop-name)
   [ "$result" = "$expected" ] \
     || fail "the relaunched secondmate did not receive exactly the launcher allowlist: $result"
   assert_absent "$home/state/sm-env.launch-env" \

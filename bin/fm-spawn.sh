@@ -1925,6 +1925,8 @@ launch_env_snapshot_create() {
   # Values come from LAUNCHER_EXPORTS in a clean shell, never from this
   # script's own variables. Only names the launcher exported are written.
   # The exports reach the shell on stdin, so no value appears in any argv.
+  # The name loop walks the positional parameters, so it holds no variable that
+  # could collide with an allowlisted name.
   # The validated names split deliberately into separate arguments.
   # shellcheck disable=SC2016,SC2086
   if ! printf '%s\n' "$LAUNCHER_EXPORTS" | env -i "$BASH" --noprofile --norc -c '
@@ -1933,13 +1935,13 @@ launch_env_snapshot_create() {
     IFS= read -r -d "" __fm_exports
     unset PWD OLDPWD SHLVL
     eval "$__fm_exports"
-    for __fm_name; do
-      case $(declare -p "$__fm_name" 2>/dev/null) in
-      "declare -x $__fm_name="*) ;;
-      *) continue ;;
+    while [ $# -gt 0 ]; do
+      case $(declare -p "$1" 2>/dev/null) in
+      "declare -x $1="*)
+        printf "export %s=%s\n" "$1" "$(shell_quote "${!1}")" || exit 1
+        ;;
       esac
-      eval "__fm_value=\${$__fm_name}"
-      printf "export %s=%s\n" "$__fm_name" "$(shell_quote "$__fm_value")" || exit 1
+      shift
     done
   ' fm-spawn-launch-env "$(declare -f shell_quote)" $snapshot_names > "$tmp"; then
     rm -f "$tmp"
