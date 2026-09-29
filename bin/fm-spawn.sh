@@ -466,6 +466,10 @@
 #   pane export happens on the remote host (bin/fm-remote-secondmate-control.sh).
 #   Local spawns never pass it and resolve their own carrier exactly as before.
 set -eu
+# Record the launcher's exported environment before this script assigns any
+# variable, so a local secondmate's launch snapshot reads the launcher's values
+# even for allowlisted names this script also uses (MODEL, EFFORT, MODE, ...).
+LAUNCHER_EXPORTS=$(export -p)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -1904,7 +1908,7 @@ launch_env_is_operational_name() {
 }
 
 launch_env_snapshot_create() {
-  local tmp env_name env_value wrote=0
+  local tmp env_name snapshot_names=
   LAUNCH_ENV_FILE=
   tmp=$(umask 077; mktemp "$STATE/.$ID.launch-env.XXXXXX") || {
     echo "error: could not create the private launch environment snapshot for $ID" >&2
@@ -1915,17 +1919,31 @@ launch_env_snapshot_create() {
     # path below must win even when an operator listed the name by mistake.
     [ "$env_name" = TRACEPARENT ] && continue
     launch_env_is_operational_name "$env_name" && continue
-    if eval '[ "${'"$env_name"'+x}" = x ]'; then
-      eval 'env_value=${'"$env_name"'-}'
-      if ! printf 'export %s=%s\n' "$env_name" "$(shell_quote "$env_value")" >> "$tmp"; then
-        rm -f "$tmp"
-        echo "error: could not write the private launch environment snapshot for $ID" >&2
-        return 1
-      fi
-      wrote=1
-    fi
+    snapshot_names="$snapshot_names $env_name"
   done
-  if [ "$wrote" = 0 ]; then
+  # Values come from LAUNCHER_EXPORTS in a clean shell, never from this
+  # script's own variables. Only names the launcher exported are written.
+  # The validated names split deliberately into separate arguments.
+  # shellcheck disable=SC2016,SC2086
+  if ! env -i "$BASH" --noprofile --norc -c '
+    unset PWD OLDPWD SHLVL
+    eval "$1"
+    eval "$2"
+    shift 2
+    for env_name; do
+      case $(declare -p "$env_name" 2>/dev/null) in
+      "declare -x $env_name="*) ;;
+      *) continue ;;
+      esac
+      eval "env_value=\${$env_name}"
+      printf "export %s=%s\n" "$env_name" "$(shell_quote "$env_value")" || exit 1
+    done
+  ' fm-spawn-launch-env "$LAUNCHER_EXPORTS" "$(declare -f shell_quote)" $snapshot_names > "$tmp"; then
+    rm -f "$tmp"
+    echo "error: could not write the private launch environment snapshot for $ID" >&2
+    return 1
+  fi
+  if [ ! -s "$tmp" ]; then
     rm -f "$tmp"
     rm -f "$STATE/$ID.launch-env"
     return 0
