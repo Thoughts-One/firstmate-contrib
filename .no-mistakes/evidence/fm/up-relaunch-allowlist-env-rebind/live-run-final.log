@@ -1,0 +1,60 @@
+
+=== S5 positive control: sampler must see a secret placed in a real argv
+positive-control hits: 1
+
+=== S1 local secondmate SPAWN: launcher values, not stale pane values
+warning: secondmate labsm1 sync skipped before launch: primary default-branch commit cannot be resolved
+spawned labsm1 harness=claude kind=secondmate mode=secondmate yolo=off window=fm-lab-sm-3277442-25712:w1:p2 worktree=/tmp/fm-lab-live.YXNACm/smhome-labsm1
+--- launch id=none 1790662870
+EFFORT=launcher-effort
+FM_LAB_ALLOWED=secretvalue-9f3a $(touch /tmp/fm-lab-live.YXNACm/INJECTED) "q" 'sq'
+FM_LAB_EMPTY=
+MODE=launcher-mode
+MODEL=launcher-model
+PASS  S1 allowlisted launcher values (incl. MODEL/EFFORT/MODE, empty, metachar) delivered
+PASS  S1 no stale pane value, no unlisted ambient, unset stays unset
+PASS  S1 value never executed as shell
+PASS  S1 one-launch snapshot removed
+PASS  S1 secret never in pane/launch text
+
+=== S2 TRACEPARENT interplay (local secondmate)
+spawned labsm2 harness=claude kind=secondmate mode=secondmate yolo=off window=fm-lab-sm-3277442-25712:w2:p2 worktree=/tmp/fm-lab-live.YXNACm/smhome-labsm2
+PASS  S2a carrier empty (tracing off): allowlisted TRACEPARENT forwards the destination pane's value (old behavior), not the launcher's
+spawned labsm3 harness=claude kind=secondmate mode=secondmate yolo=off window=fm-lab-sm-3277442-25712:w3:p2 worktree=/tmp/fm-lab-live.YXNACm/smhome-labsm3
+recorded carrier: 00-2dccc9ac278899f36b357d45841483d2-e591f08a7455329b-01
+PASS  S2b dedicated carrier wins over allowlisted TRACEPARENT (pane and launcher values both ignored)
+
+=== S3 Herdr-backed secondmate RESTART then relaunch (real claude; env read from /proc/<pid>/environ)
+lab session stopped
+server restarted
+pane w1:p2 survived restart (husk shell)
+rc=0
+warning: secondmate labsm1 sync skipped before launch: primary default-branch commit cannot be resolved
+relaunched labsm1 harness=claude from=claude model=default effort=default backend=herdr endpoint=fm-lab-sm-3277442-25712:w1:p2 worktree=/tmp/fm-lab-live.YXNACm/smhome-labsm1
+pid=3353575 cmd='claude --dangerously-skip-permissions --add-dir /tmp/fm-lab-'
+   MODEL=relaunch-model
+   MODE=relaunch-mode
+   EFFORT=relaunch-effort
+   FM_LAB_EMPTY=
+   FM_LAB_ALLOWED=relaunch-fresh secretvalue-9f3a
+PASS  S3 relaunched real claude holds the fresh launcher allowlist
+PASS  S3 no stale pane values after Herdr restart, unlisted/unset absent
+PASS  S3 snapshot removed
+
+=== S4 ORDINARY scout worker launch (existing behavior: destination-pane values, launcher not captured)
+scaffolded: /tmp/fm-lab-live.YXNACm/fmhome/data/labw1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: herdr presentation parent is absent or ambiguous; using the ordinary flat layout without projection
+spawned labw1 harness=claude kind=scout window=fm-lab-sm-3277442-25712:w4:p2 worktree=/home/kai/.treehouse/labproj-5317c3/1/labproj
+--- launch id=labw1 1790662890
+EFFORT=stale-pane-effort
+FM_LAB_ALLOWED=stale-pane
+FM_LAB_EMPTY=stale-pane
+FM_LAB_UNSET=stale-pane
+MODEL=stale-pane-model
+MODE=stale-pane-mode
+PASS  S4 ordinary worker keeps existing destination-pane expansion
+
+=== S5 argv scan verdict (hits during S1/S2/S3/S4 spawn+relaunch; must be empty)
+PASS  no launcher value in any process argv
