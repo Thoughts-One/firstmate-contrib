@@ -381,8 +381,9 @@ while [ "$attempt" -lt "$ARM_ATTEMPTS" ]; do
       continue
     fi
     # A failed hand-back cannot be dismissed just because its successor
-    # watcher is healthy: the close is still undelivered.
-    if [ "$HOST_RC" -ne 0 ]; then
+    # watcher is healthy: the close is still undelivered. Any other nonzero
+    # exit (a first watcher cycle that never started) falls through to retry.
+    if [ "$HOST_RC" -ne 0 ] && grep -q '^supervision-host failed:' "$ARM_OUT" 2>/dev/null; then
       HOST_FAILED=1
       break
     fi

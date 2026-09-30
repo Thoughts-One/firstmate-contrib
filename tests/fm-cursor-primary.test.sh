@@ -505,6 +505,10 @@ write_host_fixture() {  # <dir> <kind>
         printf 'printf "supervision-host failed: the close is undelivered\\n"\n'
         printf 'exit 1\n'
         ;;
+      startup-failed)
+        printf 'printf "watcher: FAILED - the supervision host could not start a watcher cycle\\n"\n'
+        printf 'exit 1\n'
+        ;;
       dies-once)
         printf '[ "$(wc -l < "$FM_HOME/state/host-ran")" -gt 1 ] || kill -KILL $$\n'
         printf 'printf "stale: fixture-win after a retry\\n"\n'
@@ -614,6 +618,20 @@ test_park_notifies_main_when_the_host_fails_its_hand_back() {
   body=$(followup_of "$out")
   case "$body" in *'supervision-host failed: the close is undelivered'*) ;; *) fail "a failed hand-back must reach main despite a healthy successor watcher: $out" ;; esac
   pass "cursor park: a failed hand-back tells main even when a successor watcher is healthy"
+}
+
+test_park_retries_when_the_host_cannot_start_its_first_watcher() {
+  local dir out body
+  dir=$(make_primary_dir "$TMP_ROOT/park-host-startup-failed")
+  : > "$dir/state/task1.meta"
+  mkdir -p "$dir/config"
+  : > "$dir/config/supervision-host"
+  write_host_fixture "$dir" startup-failed
+  out=$(run_park "$dir")
+  [ "$(wc -l < "$dir/state/host-ran" | tr -d ' ')" -eq 2 ] || fail "a host that could not start its first watcher must be retried: $(cat "$dir/state/host-ran")"
+  body=$(followup_of "$out")
+  case "$body" in *'could not hand an undelivered close back'*) fail "a watcher startup failure was reported as a failed hand-back: $out" ;; esac
+  pass "cursor park: a host that cannot start its first watcher keeps the guard's retry"
 }
 
 test_park_inert_under_pi_coding_agent() {
@@ -843,6 +861,7 @@ test_park_inert_when_afk
 test_park_runs_the_supervision_host_only_when_opted_in
 test_park_host_boundary_stand_down_and_death
 test_park_notifies_main_when_the_host_fails_its_hand_back
+test_park_retries_when_the_host_cannot_start_its_first_watcher
 test_park_inert_under_pi_coding_agent
 test_park_still_parks_with_pi_leak_and_cursor_identity
 test_park_stands_down_when_away_mode_activates_before_commit
