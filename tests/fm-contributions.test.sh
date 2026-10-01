@@ -1243,6 +1243,17 @@ test_merge_conflicting_wake() {
     || fail 'conflicting -> unknown -> conflicting at the same head woke again'
   with_home "$home" "$ROOT/bin/fm-contributions.sh" pending | jq -e 'length == 0' >/dev/null \
     || fail 'conflicting -> unknown -> conflicting re-pended an acked merge-conflicting event'
+  # A definite clear followed by a new conflict at the same head is a genuine re-flip and must wake again.
+  printf 'true\n' > "$home/forge/mergeable"
+  with_home "$home" env FM_CONTRIBUTIONS_NOW=2026-09-16T09:00:00Z "$ROOT/bin/fm-contributions.sh" poll >/dev/null \
+    || fail 'poll after the conflict cleared failed'
+  printf 'false\n' > "$home/forge/mergeable"
+  with_home "$home" env FM_CONTRIBUTIONS_NOW=2026-09-16T10:00:00Z "$ROOT/bin/fm-contributions.sh" poll >/dev/null \
+    || fail 'poll after the conflict returned failed'
+  [ "$(awk 'END { print NR }' "$home/state/.wake-queue")" = "$((count + 1))" ] \
+    || fail 'a genuine mergeable -> conflicting re-flip at the same head did not wake'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" pending | jq -e 'length == 1 and .[0].type == "merge-conflicting"' >/dev/null \
+    || fail 'a genuine re-flip must pend a fresh merge-conflicting event'
   pass 'mergeable CONFLICTING flip wakes once like a maintainer comment'
 }
 
