@@ -301,7 +301,8 @@ observe() { # canonical GitHub URL -> normalized JSON
               | {token:((._signal + ":") + (.id|tostring) + ":" + (.updated_at // .submitted_at // "") + ":" + (.state // "")),
                  type:._signal,source:.html_url,head:.commit_id,
                  author:.user.login,body:(.body // "" | .[:500])})
-            + (if ($att_head | type == "string" and length == 40 and test("^[a-fA-F0-9]{40}$"))
+            + (if $c.state == "open" and $c.merged_at == null
+                  and ($att_head | type == "string" and length == 40 and test("^[a-fA-F0-9]{40}$"))
                   and ($att_head | ascii_downcase) != ($c.head.sha | ascii_downcase) then
                  [{token:("attestation-stale:" + $c.head.sha + ":" + $att_head),
                    type:"attestation-stale",source:$url,head:$c.head.sha,
@@ -433,7 +434,7 @@ poll() {
               + (if $o.ready == true and $old.observation.ready != true and (any($o.events[]; .type == "ready-for-pr") | not) then
                   [{token:("ready-for-pr:" + $now),type:"ready-for-pr",source:$old.url,head:null,body:"filed issue reached ready-for-pr"}]
                  else [] end)
-              + (if $old.kind == "pr"
+              + (if $old.kind == "pr" and $o.state == "open"
                     and $o.mergeable == "conflicting"
                     and (($old.observation.definite_mergeable // "") != "conflicting") then
                   [{token:("merge-conflicting:" + ($o.head // "") + ":" + $now),
