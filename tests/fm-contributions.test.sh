@@ -1232,6 +1232,17 @@ test_merge_conflicting_wake() {
   pending=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" pending)
   printf '%s' "$pending" | jq -e 'length == 1 and .[0].type == "merge-conflicting"' >/dev/null \
     || fail "supervisor cannot retrieve merge-conflicting signal: $pending"
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" ack delivery https://github.com/o/r/pull/8 "$(printf '%s' "$pending" | jq -r '.[0].token')" >/dev/null \
+    || fail 'could not ack merge-conflicting'
+  # GitHub reports mergeable null while it recomputes; that must not reset the conflicting state.
+  printf 'null\n' > "$home/forge/mergeable"
+  registered_checks "$home" >/dev/null
+  printf 'false\n' > "$home/forge/mergeable"
+  registered_checks "$home" >/dev/null
+  [ "$(awk 'END { print NR }' "$home/state/.wake-queue")" = "$count" ] \
+    || fail 'conflicting -> unknown -> conflicting at the same head woke again'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" pending | jq -e 'length == 0' >/dev/null \
+    || fail 'conflicting -> unknown -> conflicting re-pended an acked merge-conflicting event'
   pass 'mergeable CONFLICTING flip wakes once like a maintainer comment'
 }
 

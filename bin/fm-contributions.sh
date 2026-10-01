@@ -435,13 +435,14 @@ poll() {
                  else [] end)
               + (if $old.kind == "pr"
                     and $o.mergeable == "conflicting"
-                    and (($old.observation.mergeable // "") != "conflicting") then
+                    and (($old.observation.definite_mergeable // "") != "conflicting") then
                   [{token:("merge-conflicting:" + ($o.head // $now)),
                     type:"merge-conflicting",source:$old.url,head:($o.head // null),
                     body:"PR mergeable state flipped to CONFLICTING"}]
                  else [] end)) as $events
           | $old + {checked_at:$now,error:null,
-            observation:($o + {absent_checks:((($old.observation.absent_checks // []) + [($old.observation.checks // [])[] | .name]) - [$o.checks[].name] | unique)}),
+            observation:($o + {definite_mergeable:(if $o.mergeable == "unknown" then ($old.observation.definite_mergeable // "unknown") else $o.mergeable end),
+              absent_checks:((($old.observation.absent_checks // []) + [($old.observation.checks // [])[] | .name]) - [$o.checks[].name] | unique)}),
             seen:($events | map(.token)),
             pending:(($old.pending // []) + [$events[] | select(.token as $t | ($old.seen // [] | index($t)) == null)] | unique_by(.token))}' > "$TMP/row.json"
       else
