@@ -1128,6 +1128,11 @@ test_attestation_stale_wake() {
   pending=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" pending)
   printf '%s' "$pending" | jq -e 'length == 1 and .[0].type == "attestation-stale"' >/dev/null \
     || fail "supervisor cannot retrieve attestation-stale signal: $pending"
+  with_home "$home" "$ROOT/bin/fm-fleet-snapshot.sh" --contribution-input > "$home/input.json" \
+    || fail 'could not collect contribution input for the stale attestation'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" snapshot "$home/input.json" --all \
+    | jq -e '.rows[0].reason == "incoming signal needs triage"' >/dev/null \
+    || fail 'a pending stale attestation must not read as a maintainer comment in the snapshot'
   pass 'stale no-mistakes attestation wakes once like a maintainer comment'
 }
 
