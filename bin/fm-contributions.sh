@@ -55,10 +55,10 @@
 # dependent waves: core, six independent reads, then the closing head read;
 # an issue has two waves. Before starting a URL, poll reserves the smaller of
 # the effective budget and 15 seconds for those waves. First, inside the same
-# budget, one batched GraphQL read per repository (25 PRs per query, run in
-# parallel) fetches every open GitHub PR's fingerprint: state, updatedAt,
-# head, draft, mergeable, comment and review counts, and the head's check
-# rollup state and context count. A record stores the fingerprint read just
+# budget but never into that reserve, one batched GraphQL read per repository
+# (25 PRs per query, run in parallel) fetches every open GitHub PR's
+# fingerprint: state, updatedAt, head, draft, mergeable, comment and review
+# counts, and the head's check rollup state and context count. A record stores the fingerprint read just
 # before its last good full observation (null when the heads differ) and that
 # observation's time as observed_at; both fields are optional, so older v1
 # records validate. When every owner's record holds an error-free observation
@@ -68,8 +68,8 @@
 # by URL and rotated by the current five-minute epoch bucket modulo their
 # count. Leftover budget then fully re-reads unchanged PRs, oldest
 # observed_at first, to cover changes a fingerprint cannot show.
-# A failed or partial fingerprint read only sends its PRs down the full path
-# and never records an error itself. Terminal URLs settle separately before
+# A failed or partial fingerprint read (any null field, such as no check
+# rollup) only sends its PRs down the full path and never records an error. Terminal URLs settle separately before
 # the forge budget starts and are never read.
 # A deliberately smaller configured budget remains bounded and may be
 # unmeasured, rather than being mislabeled unavailable. Each distinct URL is
@@ -409,7 +409,9 @@ read_fingerprints() { # live TSV -> $TMP/fingerprints.json {url: fingerprint}
            value:{state:$pr.state,updated_at:$pr.updatedAt,head:$pr.headRefOid,draft:$pr.isDraft,
              mergeable:$pr.mergeable,comments:$pr.comments.totalCount,reviews:$pr.reviews.totalCount,
              checks:($pr.commits.nodes[0].commit.statusCheckRollup
-               | if . == null then null else {state,contexts:.contexts.totalCount} end)}}]
+               | if . == null then null else {state,contexts:.contexts.totalCount} end)}}
+        # A fingerprint with any null field is partial and takes the full path.
+        | select([.value | .. | select(. == null)] | length == 0)]
       | from_entries' "$TMP/fingerprint-$n.json" > "$TMP/fingerprint-$n.map" 2>/dev/null \
       && jq -s 'add' "$TMP/fingerprints.json" "$TMP/fingerprint-$n.map" > "$TMP/fingerprints.next" \
       && mv "$TMP/fingerprints.next" "$TMP/fingerprints.json"
@@ -443,9 +445,12 @@ poll() {
       (IFS=$'\t'; printf '%s\n' "${row[*]}") >> "$TMP/live.tsv"
     fi
   done < "$TMP/known.tsv"
-  DEADLINE=$(( $(date +%s) + BUDGET ))
+  START=$(date +%s)
   OBSERVATION_RESERVE=$((BUDGET < 15 ? BUDGET : 15))
+  # Fingerprint reads stop short of the full-observation reserve.
+  DEADLINE=$((START + BUDGET - OBSERVATION_RESERVE))
   read_fingerprints "$TMP/live.tsv"
+  DEADLINE=$((START + BUDGET))
   # A URL is unchanged when every owner's last good full observation carries
   # the fingerprint just read. Changed URLs rotate first; unchanged ones follow
   # oldest full observation first as the backstop for fingerprint blind spots.
