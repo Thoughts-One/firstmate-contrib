@@ -50,10 +50,11 @@
 # observation's time as observed_at; both fields are optional, so older v1
 # records validate. When every owner's record holds an error-free observation
 # with the same fingerprint, poll only refreshes checked_at, with no further
-# reads, and still publishes any pending signal not yet notified. Changed PRs, PRs with no fingerprint, and issues take the full
-# observation, sorted by URL and rotated by the current five-minute epoch
-# bucket modulo their count. Leftover budget then fully re-reads unchanged
-# PRs, oldest observed_at first, to cover changes a fingerprint cannot show.
+# reads, and still publishes any pending signal not yet notified. Changed
+# PRs, PRs with no fingerprint, and issues take the full observation, sorted
+# by URL and rotated by the current five-minute epoch bucket modulo their
+# count. Leftover budget then fully re-reads unchanged PRs, oldest
+# observed_at first, to cover changes a fingerprint cannot show.
 # A failed or partial fingerprint read only sends its PRs down the full path
 # and never records an error itself. Terminal URLs settle separately before
 # the forge budget starts and are never read.
