@@ -84,13 +84,13 @@
 # a no-mistakes pipeline attestation in the PR body is bound to a different head
 # than the live head (attestation-stale), or when mergeable newly flips to
 # conflicting (merge-conflicting). This staleness sweep runs on this poll's
-# existing cadence rather than a separate schedule. poll appends ordinary durable check wakes
-# through fm-wake-lib and emits only newly durable signals for the authenticated
-# check to surface. ack removes only the named pending token. A crash after
-# enqueue can duplicate a wake but cannot consume the pending signal. Source
-# bodies are data, never commands. All mutations serialize on this home's
-# .contributions.lock. Writes refuse symlinks and publish by rename. No forge
-# writes are performed.
+# existing cadence rather than a separate schedule. poll appends ordinary
+# durable check wakes through fm-wake-lib and emits only newly durable signals
+# for the authenticated check to surface. ack removes only the named pending
+# token. A crash after enqueue can duplicate a wake but cannot consume the
+# pending signal. Source bodies are data, never commands. All mutations
+# serialize on this home's .contributions.lock. Writes refuse symlinks and
+# publish by rename. No forge writes are performed.
 #
 # arm registers the existing authenticated custom-check path. Startup and PR
 # registration call it; when filing a linked upstream issue, call arm as well.
