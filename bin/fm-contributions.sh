@@ -423,7 +423,7 @@ poll() {
               + (if $old.kind == "pr"
                     and $o.mergeable == "conflicting"
                     and (($old.observation.definite_mergeable // "") != "conflicting") then
-                  [{token:("merge-conflicting:" + ($o.head // $now)),
+                  [{token:("merge-conflicting:" + ($o.head // "") + ":" + $now),
                     type:"merge-conflicting",source:$old.url,head:($o.head // null),
                     body:"PR mergeable state flipped to CONFLICTING"}]
                  else [] end)) as $events
