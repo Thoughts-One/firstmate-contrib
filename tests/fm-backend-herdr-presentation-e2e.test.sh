@@ -408,33 +408,14 @@ Verify projected workspace behavior for $id.
 EOF
 }
 
-spawn_task() {  # <id> <home> <project> [deadline_seconds] [-- extra fm-spawn args...]
+spawn_task() {  # <id> <home> <project> [extra fm-spawn args...]; SPAWN_DEADLINE_SECONDS bounds the run
   local id=$1 home=$2 project=$3
   shift 3
-  local deadline_seconds=
-  local -a deadline_cmd=() extra_args=()
-  if [ "${1:-}" = -- ]; then
-    shift
-    extra_args=("$@")
-  elif [ -n "${1:-}" ]; then
-    case "$1" in
-    *[!0-9]*) fail "spawn_task: optional 4th arg must be deadline seconds or --" ;;
-    *)
-      deadline_seconds=$1
-      shift
-      ;;
-    esac
-    if [ "${1:-}" = -- ]; then
-      shift
-      extra_args=("$@")
-    elif [ "$#" -gt 0 ]; then
-      fail "spawn_task: extra args must follow --"
-    fi
-  fi
-  [ -z "$deadline_seconds" ] || deadline_cmd=(fm_run_timed "$deadline_seconds")
+  local -a deadline_cmd=()
+  [ -z "${SPAWN_DEADLINE_SECONDS:-}" ] || deadline_cmd=(fm_run_timed "$SPAWN_DEADLINE_SECONDS")
   FM_GATE_REFUSE_BYPASS=1 FM_SPAWN_NO_GUARD=1 FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" \
-    "${deadline_cmd[@]}" "$ROOT/bin/fm-spawn.sh" "$id" "$project" "sh -c 'while :; do sleep 60; done'" \
-    --mode no-mistakes --yolo off --backend herdr "${extra_args[@]}"
+    ${deadline_cmd[@]+"${deadline_cmd[@]}"} "$ROOT/bin/fm-spawn.sh" "$id" "$project" "sh -c 'while :; do sleep 60; done'" \
+    --mode no-mistakes --yolo off --backend herdr "$@"
 }
 
 finish_concurrent_spawn() {  # <id> <status> <stdout> <stderr>
@@ -1463,8 +1444,8 @@ while [ ! -e "$LOCK_WAIT_READY" ] && kill -0 "$LOCK_WAIT_HOLDER_PID" 2>/dev/null
 LOCK_WAIT_DEADLINE_SECONDS=$((LOCK_WAIT_HOLD_SECONDS + 60))
 LOCK_WAIT_FOCUS=$(focus_snapshot)
 LOCK_WAIT_START=$(date +%s)
-if spawn_task "$LOCK_WAIT_ID" "$HOME_DIR" "$RECOVERY_PROJECT_DIR" "$LOCK_WAIT_DEADLINE_SECONDS" \
-    -- --herdr-resume-lock-wait \
+if SPAWN_DEADLINE_SECONDS=$LOCK_WAIT_DEADLINE_SECONDS \
+    spawn_task "$LOCK_WAIT_ID" "$HOME_DIR" "$RECOVERY_PROJECT_DIR" --herdr-resume-lock-wait \
     > "$TMP_ROOT/lock-wait-resume.out" 2> "$TMP_ROOT/lock-wait-resume.err"; then
   LOCK_WAIT_STATUS=0
 else
