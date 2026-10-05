@@ -1,0 +1,53 @@
+## valid
+exit=0
+t1
+## adversarial names
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=a\`b exit=0
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=$'a\nb' exit=0
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=a\ b exit=0
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=a\;b exit=0
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=\$\(x\) exit=0
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=../x exit=0
+## empty
+error: --herdr-retire-session requires a non-empty session name
+exit=1
+## mutex
+error: --herdr-lab and --herdr-retire-session are mutually exclusive: the lab helper only ever operates on a session it generated itself, while the retirement helper only ever operates on a pre-existing session it did not create
+exit=1
+## scout
+exit=0
+## secondmate
+error: --herdr-retire-session applies only to crewmate ship or scout briefs
+exit=1
+## adversarial names (exit codes)
+case1 rc=1
+case2 rc=1
+case3 rc=1
+case4 rc=1
+case5 rc=1
+case6 rc=1
+case7 rc=0
+adv7
+t1
+t5
+## rendered section (t1)
+# Herdr retirement - HARD SAFETY CONTRACT
+This brief was explicitly scaffolded with `--herdr-retire-session mbk-old.1_x` because the task's only Herdr lifecycle action is guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
+
+1. Run only `'/home/kai/.no-mistakes/worktrees/7605832e1988/01M46JQ6SNMDDE95HPYQMWSS3Z/bin/fm-herdr-session-retire.sh' 'mbk-old.1_x'` to stop it.
+   It refuses the target unless it is empty, refuses `default`, `fm-remote`, and every `fm-lab-*` name, snapshots and re-verifies every other session before and after the call, and never deletes, restarts, or force-stops anything.
+2. Before that call, rule out concurrent writers against the target: Herdr has no conditional stop, so the helper's emptiness check is best-effort and another client can add a workspace between the final check and the stop.
+3. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.
+4. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.
+5. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.
+
+Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.
+The captain fleet uses the running `default` session.
+## default brief has no retire section:
+0

@@ -1,0 +1,38 @@
+## before
+[{"name":"default","running":false},{"name":"rt-busy","running":true},{"name":"rt-bystander","running":true},{"name":"rt-empty","running":true}]
+## refuse 'default'
+fm-herdr-session-retire: refusing session name 'default'
+exit=1
+## refuse 'fm-remote'
+fm-herdr-session-retire: refusing session name 'fm-remote'
+exit=1
+## refuse 'fm-lab-x'
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-x
+exit=1
+## refuse ''
+fm-herdr-session-retire: refusing an empty session name
+exit=1
+## refuse missing
+fm-herdr-session-retire: refusing 'rt-nope': expected exactly one matching session in the Herdr session list, found 0
+exit=1
+## refuse non-empty rt-busy
+fm-herdr-session-retire: refusing 'rt-busy': the target session is not empty
+exit=1
+[{"name":"default","running":false},{"name":"rt-busy","running":true},{"name":"rt-bystander","running":true},{"name":"rt-empty","running":true}]
+## extra args
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+exit=2
+## stop empty rt-empty
+stopped rt-empty
+exit=0
+[{"name":"default","running":false},{"name":"rt-busy","running":true},{"name":"rt-bystander","running":true},{"name":"rt-empty","running":false}]
+## re-run on stopped
+fm-herdr-session-retire: refusing 'rt-empty': session reports running=false
+exit=1
+## rt-busy workspaces still:
+1
