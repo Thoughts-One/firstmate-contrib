@@ -1,0 +1,6 @@
+parent rc=0
+child: a /x/a --backend herdr --mode no-mistakes --yolo off --herdr-resume-lock-wait
+child: b /x/b --backend herdr --mode no-mistakes --yolo off --herdr-resume-lock-wait
+parent rc=0
+child: a /x/a --backend herdr --mode no-mistakes --yolo off
+child: b /x/b --backend herdr --mode no-mistakes --yolo off
