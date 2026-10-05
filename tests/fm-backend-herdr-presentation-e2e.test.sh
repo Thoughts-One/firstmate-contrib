@@ -280,13 +280,18 @@ export HERDR_SESSION="$HERDR_LAB_SESSION" HERDR_LAB_SESSION
 LAB_READY=0
 RECORDED_WORKTREES=""
 LOCK_CONTENTION_OWNER_PID=
+LOCK_REFUSE_HOLDER_PID=
+LOCK_WAIT_HOLDER_PID=
 cleanup_all() {
-  local wt
-  if [ -n "$LOCK_CONTENTION_OWNER_PID" ]; then
-    kill "$LOCK_CONTENTION_OWNER_PID" 2>/dev/null || true
-    wait "$LOCK_CONTENTION_OWNER_PID" 2>/dev/null || true
-    LOCK_CONTENTION_OWNER_PID=
-  fi
+  local wt pid
+  for pid in "$LOCK_CONTENTION_OWNER_PID" "$LOCK_REFUSE_HOLDER_PID" "$LOCK_WAIT_HOLDER_PID"; do
+    [ -n "$pid" ] || continue
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
+  LOCK_CONTENTION_OWNER_PID=
+  LOCK_REFUSE_HOLDER_PID=
+  LOCK_WAIT_HOLDER_PID=
   while IFS= read -r wt; do
     [ -n "$wt" ] || continue
     [ -d "$wt" ] || continue
@@ -1399,6 +1404,7 @@ if [ "$LOCK_REFUSE_STATUS" -eq 0 ]; then
   fail "default resumed identity succeeded under session lock contention instead of refusing: $(cat "$TMP_ROOT/lock-refuse-resume.out")"
 fi
 wait "$LOCK_REFUSE_HOLDER_PID" || fail "resume lock-refuse lock holder failed"
+LOCK_REFUSE_HOLDER_PID=
 [ "$LOCK_REFUSE_STATUS" -ne 0 ] \
   || fail "default resumed identity returned success under contention"
 grep -F "refusing a concurrent resume" "$TMP_ROOT/lock-refuse-resume.err" >/dev/null 2>&1 \
@@ -1453,6 +1459,7 @@ else
 fi
 LOCK_WAIT_ELAPSED=$(( $(date +%s) - LOCK_WAIT_START ))
 wait "$LOCK_WAIT_HOLDER_PID" || fail "resume lock-wait lock holder failed"
+LOCK_WAIT_HOLDER_PID=
 if [ "$LOCK_WAIT_STATUS" -eq 124 ]; then
   fail "opt-in resumed recovery hung for over ${LOCK_WAIT_DEADLINE_SECONDS}s instead of waiting out a ${LOCK_WAIT_HOLD_SECONDS}s session lock hold"
 fi
