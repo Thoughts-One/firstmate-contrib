@@ -55,22 +55,23 @@
 # dependent waves: core, six independent reads, then the closing head read;
 # an issue has two waves. Before starting a URL, poll reserves the smaller of
 # the effective budget and 15 seconds for those waves. First, inside the same
-# budget but never into that reserve, one batched GraphQL read per repository
-# (25 PRs per query, run in parallel) fetches every open GitHub PR's
-# fingerprint: state, updatedAt, head, draft, mergeable, comment and review
-# counts, and the head's check rollup state and context count. A record stores the fingerprint read just
-# before its last good full observation (null when the heads differ) and that
-# observation's time as observed_at; both fields are optional, so older v1
-# records validate. When every owner's record holds an error-free observation
-# with the same fingerprint, poll only refreshes checked_at, with no further
-# reads, and still publishes any pending signal not yet notified. Changed
-# PRs, PRs with no fingerprint, and issues take the full observation, sorted
-# by URL and rotated by the current five-minute epoch bucket modulo their
-# count. Leftover budget then fully re-reads unchanged PRs, oldest
-# observed_at first, to cover changes a fingerprint cannot show.
-# A failed or partial fingerprint read (any null field, such as no check
-# rollup) only sends its PRs down the full path and never records an error. Terminal URLs settle separately before
-# the forge budget starts and are never read.
+# budget, one batched GraphQL read per repository (25 PRs per query, run in
+# parallel) fetches every open GitHub PR's fingerprint: state, updatedAt, head,
+# draft, mergeable, comment and review counts, and the head's check rollup
+# state and context count. That read has a deadline of the budget minus the
+# reserve. A record stores the fingerprint read just before its last good full
+# observation (null when the heads differ) and that observation's time as
+# observed_at; both fields are optional, so older v1 records validate. When
+# every owner's record holds an error-free observation with the same
+# fingerprint, poll only refreshes checked_at, with no further reads, and
+# still publishes any pending signal not yet notified. Changed PRs, PRs with no
+# fingerprint, and issues take the full observation, sorted by URL and rotated
+# by the current five-minute epoch bucket modulo their count. Leftover budget
+# then fully re-reads unchanged PRs, oldest observed_at first, to cover changes
+# a fingerprint cannot show. A failed or partial fingerprint read (any null
+# field, such as no check rollup) only sends its PRs down the full path and
+# never records an error. Terminal URLs settle separately before the forge
+# budget starts and are never read.
 # A deliberately smaller configured budget remains bounded and may be
 # unmeasured, rather than being mislabeled unavailable. Each distinct URL is
 # attempted at most once per poll and its observation applied to every owner.
