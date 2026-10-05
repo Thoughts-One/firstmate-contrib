@@ -336,7 +336,7 @@ pass "down refuses anything up did not build"
 C_HASH=$(printf '%s' "$CH" | shasum -a 256 | awk '{print $1}')
 OTHER_ID="labt$$-other"
 fm_write_meta "$CH/state/$OTHER_ID.meta" "window=firstmate:fm-$OTHER_ID" "tasktmp=/tmp/fm-$OTHER_ID"
-mkdir -p "/tmp/fm-$WORKER_ID/gotmp" "/tmp/fm-$MATE_ID" "/tmp/fm-$WORKER_ID+$C_HASH" "/tmp/fm-$OTHER_ID+$C_HASH" "/tmp/fm-$OTHER_ID"
+mkdir -p "/tmp/fm-$WORKER_ID/gotmp" "/tmp/fm-$MATE_ID" "/tmp/fm-$WORKER_ID+$C_HASH" "/tmp/fm-$OTHER_ID+$C_HASH" "/tmp/fm-$OTHER_ID" "/tmp/fm-$WORKER_ID+uid$(id -u)" "/tmp/fm-$MATE_ID+uid$(id -u)" "/tmp/fm-$OTHER_ID+uid$(id -u)"
 # An outsider opening a lab path is not owned by the lab.
 printf 'sleep 600\n' > "$C/stray.sh"
 bash "$C/stray.sh" >/dev/null 2>&1 &
@@ -379,6 +379,9 @@ assert_absent "/tmp/fm-$MATE_ID" "down removes the mate's task temp dir"
 assert_absent "/tmp/fm-$WORKER_ID+$C_HASH" "down removes the worker's launch dir"
 assert_absent "/tmp/fm-$OTHER_ID+$C_HASH" "down removes a lab-spawned task's launch dir scoped to the lab home"
 assert_present "/tmp/fm-$OTHER_ID" "down keeps a task temp dir another home could share"
+assert_absent "/tmp/fm-$WORKER_ID+uid$(id -u)" "down removes the worker's uid-scoped task temp root"
+assert_absent "/tmp/fm-$MATE_ID+uid$(id -u)" "down removes the mate's uid-scoped task temp root"
+assert_present "/tmp/fm-$OTHER_ID+uid$(id -u)" "down keeps another task's uid-scoped root, which another home could share"
 kept=$(node -e 'const j=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));console.log(JSON.stringify([j.keep,Object.keys(j.projects).sort()]))' "$HOME/.claude.json")
 assert_equals '[1,["/elsewhere/project"]]' "$kept" "down removes exactly the lab's Claude project entries"
 assert_contains "$out" "removed: 2 Claude project entries" "down reports the removed entries"
