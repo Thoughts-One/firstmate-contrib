@@ -1,0 +1,6 @@
+ok - Kimi hook install is idempotent and removal restores every foreign config byte
+ok - Kimi hook removal preserves owned newline boundaries and pristine bytes
+ok - Kimi hook install refuses missing, malformed, and surprising config without writing
+ok - Kimi hook install refuses without jq before any config write
+not ok - kimi launch did not use the absolute binary, model, and --auto only: export DISABLE_AUTOUPDATER='0'; export COMPACT_ADVISER_DISABLE=1; export FM_TASK_INBOX='/tmp/fm-kimi-harness.VyVQBP/success/home/state/kimi-success-z1-1658662.inbox'; export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0='/tmp/fm-kimi-harness.VyVQBP/success/home/state/kimi-success-z1-1658662.git-hooks'; env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI '/tmp/fm-kimi-harness.VyVQBP/success/fake/fakebin/kimi' --model 'kimi-code/k3' --auto
+exit=1
