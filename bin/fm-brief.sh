@@ -40,6 +40,8 @@
 #   session Firstmate did not provision. It adds the hard retirement contract
 #   backed by bin/fm-herdr-session-retire.sh and is mutually exclusive with
 #   --herdr-lab, since the two helpers own disjoint session-lifecycle scopes.
+#   The name may contain only letters, digits, dots, underscores, and dashes,
+#   because it is rendered into the brief's Markdown.
 #   One of these flags must be explicit because {TASK} and {FIRSTMATE_SPEC} are
 #   filled after scaffolding and the caller-supplied repo string cannot reliably
 #   identify this repo. Briefs made without either flag carry a loud declaration
