@@ -929,6 +929,12 @@ test_herdr_lab_and_herdr_retire_session_are_mutually_exclusive() {
   expect_code 1 "$status" "a --herdr-retire-session name with a newline must be rejected"
   assert_absent "$home/data/herdr-newline-name/brief.md" \
     "rejected newline --herdr-retire-session still wrote a brief"
+  status=0
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" herdr-help-name firstmate --mode direct-PR \
+    --herdr-retire-session --help >/dev/null 2>&1 || status=$?
+  expect_code 1 "$status" "a --herdr-retire-session name the helper reads as --help must be rejected"
+  assert_absent "$home/data/herdr-help-name/brief.md" \
+    "rejected --help --herdr-retire-session still wrote a brief"
   pass "fm-brief.sh: --herdr-lab and --herdr-retire-session are mutually exclusive and require a real name"
 }
 

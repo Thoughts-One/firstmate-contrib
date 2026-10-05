@@ -336,6 +336,12 @@ if [ -n "$HERDR_RETIRE_SESSION" ]; then
   # rendered into agent-facing Markdown prose, so a backtick or newline would
   # break the contract or inject apparent instructions.
   case "$HERDR_RETIRE_SESSION" in
+    --help)
+      # The helper reads a lone --help as its usage option, so it would exit 0
+      # without stopping anything.
+      echo "error: --herdr-retire-session cannot use the helper's --help option as a session name" >&2
+      exit 1
+      ;;
     *[!A-Za-z0-9._-]*)
       echo "error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes" >&2
       exit 1
