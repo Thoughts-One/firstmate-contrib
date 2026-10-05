@@ -283,7 +283,7 @@ observe() { # canonical GitHub URL -> normalized JSON
       | ($reviews[0] | add // []) as $reviews
       | ($c.body // "") as $body
       | ([$body
-          | capture("no-mistakes-pipeline-attestation:v1\\s+(?<json>\\{[^<]*\\})\\s*-->"; "m")
+          | capture("Updates from \\[git push no-mistakes\\]\\(https://github\\.com/kunchenguid/no-mistakes\\)\\s*<!-- no-mistakes-pipeline-attestation:v1\\s+(?<json>\\{[^<]*\\})\\s*-->"; "m")
           | .json
           | fromjson?
           | .head_sha // empty] | first // "") as $att_head
@@ -430,19 +430,20 @@ poll() {
       if [ "$observed" -eq 0 ]; then
         jq -n --arg now "$NOW" --slurpfile old "$old" --slurpfile observation "$TMP/observation.json" '
           $old[0] as $old | $observation[0] as $o
+          | (if $old.kind == "pr" and $o.state == "open" and $o.mergeable == "conflicting"
+                and (($old.observation.definite_mergeable // "") != "conflicting") then 1 else 0 end) as $flip
+          | (($old.observation.conflict_flips // 0) + $flip) as $flips
           | ($o.events
               + (if $o.ready == true and $old.observation.ready != true and (any($o.events[]; .type == "ready-for-pr") | not) then
                   [{token:("ready-for-pr:" + $now),type:"ready-for-pr",source:$old.url,head:null,body:"filed issue reached ready-for-pr"}]
                  else [] end)
-              + (if $old.kind == "pr" and $o.state == "open"
-                    and $o.mergeable == "conflicting"
-                    and (($old.observation.definite_mergeable // "") != "conflicting") then
-                  [{token:("merge-conflicting:" + ($o.head // "") + ":" + $now),
+              + (if $flip == 1 then
+                  [{token:("merge-conflicting:" + ($o.head // "") + ":" + ($flips | tostring)),
                     type:"merge-conflicting",source:$old.url,head:($o.head // null),
                     body:"PR mergeable state flipped to CONFLICTING"}]
                  else [] end)) as $events
           | $old + {checked_at:$now,error:null,
-            observation:($o + {definite_mergeable:(if $o.mergeable == "unknown" then ($old.observation.definite_mergeable // "unknown") else $o.mergeable end),
+            observation:($o + {conflict_flips:$flips,definite_mergeable:(if $o.mergeable == "unknown" then ($old.observation.definite_mergeable // "unknown") else $o.mergeable end),
               absent_checks:((($old.observation.absent_checks // []) + [($old.observation.checks // [])[] | .name]) - [$o.checks[].name] | unique)}),
             seen:($events | map(.token)),
             pending:(($old.pending // []) + [$events[] | select(.token as $t | ($old.seen // [] | index($t)) == null)] | unique_by(.token))}' > "$TMP/row.json"
