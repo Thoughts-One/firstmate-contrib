@@ -55,7 +55,8 @@
 #                    <lab-root>/pi-sessions.
 #   task ids         lab<nonce>-mate and lab<nonce>-worker, unique per lab,
 #                    because a spawn keeps a task temp dir at
-#                    /tmp/fm-<id>+uid<uid> that a fixed id would share with other labs and tasks.
+#                    /tmp/fm-<id>+uid<uid> that a fixed id would share with
+#                    other labs and tasks of the same user.
 #   mate/            --mate: bin/fm-home-seed.sh <mate-id> <lab-root>/mate
 #                    --no-projects (an explicit path cloned from the git lab
 #                    home), launched by bin/fm-spawn.sh --secondmate.
