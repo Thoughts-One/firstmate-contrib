@@ -24,12 +24,12 @@ bearings() {
     FM_BEARINGS_NOW="$NOW" "$ROOT/bin/fm-bearings-snapshot.sh" --json
 }
 
-record() { # home id number forge-state mergeability [hold]
-  local home=$1 id=$2 number=$3 state=$4 mergeable=$5 hold=${6:-}
+record() { # home id number forge-state mergeability [hold] [owner/repo]
+  local home=$1 id=$2 number=$3 state=$4 mergeable=$5 hold=${6:-} repo=${7:-o/r}
   mkdir -p "$home/data/$id"
-  printf -- '- [ ] %s - Contribution %s https://github.com/o/r/pull/%s (repo: sample) (kind: ship) %s\n' \
-    "$id" "$id" "$number" "$hold" >> "$home/data/backlog.md"
-  jq -n --arg task "$id" --arg url "https://github.com/o/r/pull/$number" \
+  printf -- '- [ ] %s - Contribution %s https://github.com/%s/pull/%s (repo: sample) (kind: ship) %s\n' \
+    "$id" "$id" "$repo" "$number" "$hold" >> "$home/data/backlog.md"
+  jq -n --arg task "$id" --arg url "https://github.com/$repo/pull/$number" \
     --arg head "$HEAD_A" --arg at "$NOW" --arg state "$state" --arg mergeable "$mergeable" '
     {schema:"fm-contributions.v1",task:$task,records:[{
       url:$url,kind:"pr",checked_at:$at,error:null,pending:[],seen:[],verdict:null,
@@ -125,19 +125,19 @@ case "$*" in
   'pr view '*state*) printf 'OPEN\n' ;;
   'api graphql -f query=query{repository(owner:"o",name:"r"){'*)
     # Every queried PR shares the fixture's head, state, counts and rollup.
+    # Like the live field, reviews counts reviews, not standalone inline comments.
     grep -o 'pullRequest(number:[0-9]*)' <<< "$*" | tr -dc '0-9\n' | jq -R . | jq -s \
       --arg head "$(cat "$FORGE/head")" \
       --arg state "$(cat "$FORGE/state" 2>/dev/null || printf open)" \
       --arg updated "$(cat "$FORGE/updated" 2>/dev/null || printf 2026-09-16T07:00:00Z)" \
       --argjson mergeable "$(tr -d '[:space:]' < "$FORGE/mergeable" 2>/dev/null || printf true)" \
       --slurpfile comments "$FORGE/comments.json" --slurpfile reviews "$FORGE/reviews.json" \
-      --slurpfile inline "$FORGE/inline.json" \
       --arg rollup "$(cat "$FORGE/rollup" 2>/dev/null || printf SUCCESS)" '
       {data:{repository:(map({key:("p" + .),value:{state:($state | ascii_upcase),updatedAt:$updated,
         headRefOid:$head,isDraft:false,
         mergeable:(if $mergeable == true then "MERGEABLE" elif $mergeable == false then "CONFLICTING" else "UNKNOWN" end),
         comments:{totalCount:($comments[0] | length)},
-        reviews:{totalCount:(($reviews[0] | length) + ($inline[0] | length))},
+        reviews:{totalCount:($reviews[0] | length)},
         commits:{nodes:[{commit:{statusCheckRollup:(if $rollup == "NONE" then null else {state:$rollup,contexts:{totalCount:1}} end)}}]}}}) | from_entries)}}' ;;
   'api repos/o/r/pulls/8'|'api repos/o/r/pulls/9'|'api repos/o/r/pulls/10')
     jq -n --arg head "$(cat "$FORGE/head")" --arg state "$(cat "$FORGE/state" 2>/dev/null || printf open)" '
@@ -671,7 +671,9 @@ case "$fault:$*" in
   not-found:'api repos/o/r/'*) printf 'HTTP 404\n' >&2; exit 1 ;;
   hang:'api repos/o/r/pulls/8') sleep 4 ;;
   # Spend six budget seconds on the fingerprint read or on each full PR read.
-  fingerprint-clock:'api graphql '*|core-clock:'api repos/o/r/pulls/'[0-9]|core-clock:'api repos/o/r/pulls/'[0-9][0-9])
+  # Parallel fingerprint queries each bump the shared clock, so publish by rename.
+  fingerprint-clock:'api graphql '*) clock_bump 6 ;;
+  core-clock:'api repos/o/r/pulls/'[0-9]|core-clock:'api repos/o/r/pulls/'[0-9][0-9])
     printf '%s\n' "$(( $(cat "$FORGE/clock") + 6 ))" > "$FORGE/clock" ;;
   fingerprint-down:'api graphql '*) printf 'HTTP 502\n' >&2; exit 1 ;;
   head:'pr view '*) printf '{"headRefOid":"%s","reviewDecision":"APPROVED"}\n' "$(printf 'b%.0s' $(seq 40))"; exit 0 ;;
@@ -1258,6 +1260,82 @@ test_backstop_reads_the_oldest_full_observation() {
   pass 'leftover budget fully re-reads the unchanged PR with the oldest full observation'
 }
 
+test_inline_only_signal_is_found_by_the_backstop() {
+  local home out
+  home=$(new_home fingerprint-inline)
+  forge_home "$home"
+  wrap_forge "$home"
+  stamp_fingerprint "$home" delivery 2026-09-15T07:00:00Z
+  # A standalone inline comment moves no fingerprint field, so only the
+  # oldest-first full read can see it.
+  jq -n '[{id:12,user:{login:"maintainer"},author_association:"OWNER",body:"Please clarify the contract",
+    html_url:"https://github.com/o/r/pull/8#discussion_r12",updated_at:"2026-09-16T08:01:00Z"}]' \
+    > "$home/forge/inline.json"
+  /bin/date +%s > "$home/forge/clock"
+  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll) || fail 'inline-only poll failed'
+  [ "$(grep -c '^api graphql ' "$home/forge/calls")" = 1 ] || fail 'the inline-only poll did not take one fingerprint read'
+  rest_reads "$home" | grep -Fx 'api repos/o/r/pulls/8' >/dev/null || fail 'the backstop did not fully read the unchanged PR'
+  jq -e --arg now "$NOW" --arg head "$HEAD_A" '.records[0] | .observed_at == $now and .error == null
+    and .fingerprint.head == $head and .fingerprint.reviews == 0
+    and (.pending | length == 1 and .[0].type == "review-comment" and .[0].author == "maintainer")' \
+    "$home/data/delivery/contributions.json" >/dev/null || fail 'the backstop read lost the inline-only maintainer signal'
+  printf '%s' "$out" | grep -F 'contribution-wake: check: contributions delivery' >/dev/null \
+    || fail "an inline-only maintainer signal did not wake: $out"
+  pass 'an inline-only maintainer signal that moves no fingerprint field is found by the full-read backstop'
+}
+
+test_fingerprints_map_to_their_own_pr_across_chunks_and_repositories() {
+  local home number sizes
+  home=$(new_home fingerprint-chunks)
+  forge_home "$home"
+  # Each PR reports an updatedAt unique to its repository and number, so a
+  # fingerprint stored under the wrong URL reads as changed and forces a REST read.
+  cat > "$home/fakebin/gh" <<'SH'
+#!/usr/bin/env bash
+set -eu
+case "$*" in
+  'api graphql -f query=query{repository(owner:"'*)
+    owner=$(sed -E 's/.*repository\(owner:"([^"]*)",name:"([^"]*)".*/\1/' <<< "$*")
+    name=$(sed -E 's/.*repository\(owner:"([^"]*)",name:"([^"]*)".*/\2/' <<< "$*")
+    case "$owner/$name" in o/r) hour=07 ;; p/q) hour=06 ;; *) printf 'unexpected repository: %s/%s\n' "$owner" "$name" >&2; exit 1 ;; esac
+    grep -o 'pullRequest(number:[0-9]*)' <<< "$*" | tr -dc '0-9\n' | jq -R . | jq -s --arg head "$(cat "$FORGE/head")" --arg hour "$hour" '
+      {data:{repository:(map({key:("p" + .),value:{state:"OPEN",
+        updatedAt:("2026-09-16T" + $hour + ":" + (("0" + .)[-2:]) + ":00Z"),headRefOid:$head,isDraft:false,
+        mergeable:"MERGEABLE",comments:{totalCount:0},reviews:{totalCount:0},
+        commits:{nodes:[{commit:{statusCheckRollup:{state:"SUCCESS",contexts:{totalCount:1}}}}]}}}) | from_entries)}}' ;;
+  *) printf 'unexpected gh fixture call: %s\n' "$*" >&2; exit 1 ;;
+esac
+SH
+  chmod +x "$home/fakebin/gh"
+  wrap_forge "$home"
+  # Twenty-seven PRs in o/r need two queries; p/q reuses two of its numbers.
+  stamp_fingerprint "$home" delivery 2026-09-15T07:00:00Z '.updated_at = "2026-09-16T07:08:00Z"'
+  for number in $(seq 9 34); do
+    record "$home" "or-$number" "$number" open mergeable
+    stamp_fingerprint "$home" "or-$number" 2026-09-15T07:00:00Z ".updated_at = \"2026-09-16T07:$(printf '%02d' "$number"):00Z\""
+  done
+  for number in 8 9; do
+    record "$home" "pq-$number" "$number" open mergeable '' p/q
+    stamp_fingerprint "$home" "pq-$number" 2026-09-15T07:00:00Z ".updated_at = \"2026-09-16T06:$(printf '%02d' "$number"):00Z\""
+  done
+  /bin/date +%s > "$home/forge/clock"
+  # The fingerprint reads leave less than the full-read reserve, so no backstop read runs.
+  printf 'fingerprint-clock\n' > "$home/forge/fault"
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" poll >/dev/null || fail 'multi-chunk multi-repository poll failed'
+  sizes=$(grep '^api graphql ' "$home/forge/calls" | awk '{ print gsub(/pullRequest\(number:/, "") }' | sort -n | tr '\n' ' ')
+  [ "$sizes" = '2 2 25 ' ] || fail "expected one query per chunk (25 and 2 PRs in o/r, 2 in p/q), got sizes: $sizes"
+  [ -z "$(rest_reads "$home")" ] || fail "fingerprints mapped to the wrong PR and forced REST reads: $(rest_reads "$home")"
+  for number in $(seq 9 34); do
+    jq -e --arg now "$NOW" '.records[0] | .checked_at == $now and .error == null and .observed_at == "2026-09-15T07:00:00Z"' \
+      "$home/data/or-$number/contributions.json" >/dev/null || fail "o/r PR $number was not refreshed cheaply"
+  done
+  for number in 8 9; do
+    jq -e --arg now "$NOW" '.records[0] | .checked_at == $now and .error == null and .observed_at == "2026-09-15T07:00:00Z"' \
+      "$home/data/pq-$number/contributions.json" >/dev/null || fail "p/q PR $number was not refreshed cheaply"
+  done
+  pass 'fingerprints from several 25-PR chunks and repositories map to the right PR'
+}
+
 test_fingerprint_change_triggers_full_read() { # head|comment|checks
   local mode=$1 home out after
   home=$(new_home "fingerprint-$mode")
@@ -1386,7 +1464,7 @@ test_partial_fingerprint_takes_the_full_path() {
 }
 
 failures=0
-for test_name in test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_verdict_actor_values_are_discoverable test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_record_task_identity_matches_dirname_basename test_read_only_views_create_no_state test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_interrupted_multi_owner_poll_settles_every_owner test_done_task_open_pr_still_observed test_reservation_defers_later_url_when_fifteen_seconds_do_not_remain test_three_second_pr_reads_complete_fresh_in_one_cycle test_slow_read_deadline_kill_is_budget_refusal test_unmeasured_url_does_not_starve_the_tail test_budget_is_cut_down_to_the_watcher_check_bound test_arm_plumbs_a_configured_budget_into_the_check_shim test_unavailable_forge_records_error_and_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed test_retire_ends_observation_of_a_gone_contribution test_late_owner_of_a_retired_final_contribution_is_not_retired test_retire_is_idempotent_and_refuses_unknown_pairs test_unchanged_prs_refresh_fresh_without_rest_reads test_backstop_reads_the_oldest_full_observation test_fingerprint_head_change test_fingerprint_comment_change test_fingerprint_checks_change test_fingerprint_failure_falls_back_to_full_read test_old_record_without_fingerprint_still_works test_unrecorded_pr_gets_its_first_full_observation test_fingerprint_read_leaves_the_full_read_reserve test_partial_fingerprint_takes_the_full_path; do
+for test_name in test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_verdict_actor_values_are_discoverable test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_record_task_identity_matches_dirname_basename test_read_only_views_create_no_state test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_interrupted_multi_owner_poll_settles_every_owner test_done_task_open_pr_still_observed test_reservation_defers_later_url_when_fifteen_seconds_do_not_remain test_three_second_pr_reads_complete_fresh_in_one_cycle test_slow_read_deadline_kill_is_budget_refusal test_unmeasured_url_does_not_starve_the_tail test_budget_is_cut_down_to_the_watcher_check_bound test_arm_plumbs_a_configured_budget_into_the_check_shim test_unavailable_forge_records_error_and_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed test_retire_ends_observation_of_a_gone_contribution test_late_owner_of_a_retired_final_contribution_is_not_retired test_retire_is_idempotent_and_refuses_unknown_pairs test_unchanged_prs_refresh_fresh_without_rest_reads test_backstop_reads_the_oldest_full_observation test_inline_only_signal_is_found_by_the_backstop test_fingerprints_map_to_their_own_pr_across_chunks_and_repositories test_fingerprint_head_change test_fingerprint_comment_change test_fingerprint_checks_change test_fingerprint_failure_falls_back_to_full_read test_old_record_without_fingerprint_still_works test_unrecorded_pr_gets_its_first_full_observation test_fingerprint_read_leaves_the_full_read_reserve test_partial_fingerprint_takes_the_full_path; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures contribution regressions"
