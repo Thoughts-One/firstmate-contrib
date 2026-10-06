@@ -1,0 +1,2 @@
+ok - fm-control relaunch: the legacy temp root is replaced by the uid-namespaced one
+ok - fm-control relaunch: a launch failure after the stop keeps the prior record and reports the real state
