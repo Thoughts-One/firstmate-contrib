@@ -1,0 +1,8 @@
+ok - fm-brief.sh: ship and scout scaffolds make omitted Herdr intent fail-visible
+ok - fm-brief.sh: --herdr-retire-session emits the complete hard retirement contract
+ok - fm-brief.sh: --herdr-retire-session uses its quoted Firstmate-owned helper path
+ok - fm-brief.sh: Herdr retirement contract covers scouts and rejects secondmate misuse
+ok - fm-brief.sh: --herdr-lab and --herdr-retire-session are mutually exclusive and require a real name
+ok - fm-brief.sh: relative directory inputs ignore CDPATH, render stable absolute charter paths, or fail loudly
+ok - fm-brief.sh: the home brief include lands last on ship and scout, verbatim, and fails closed
+rc=0

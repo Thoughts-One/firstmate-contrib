@@ -1,0 +1,72 @@
+{"id":"cli:workspace:create","result":{"root_pane":{"agent_status":"unknown","cwd":"/tmp/fm-retire-live.X75Dl5/home","focused":true,"foreground_cwd":"/tmp/fm-retire-live.X75Dl5/home","pane_id":"w1:p1","revision":0,"scroll":{"max_offset_from_bottom":0,"offset_from_bottom":0,"viewport_rows":40},"tab_id":"w1:t1","terminal_id":"term_65d3d351c84e91","workspace_id":"w1"},"tab":{"agent_status":"unknown","focused":true,"label":"1","number":1,"pane_count":1,"tab_id":"w1:t1","workspace_id":"w1"},"type":"workspace_created","workspace":{"active_tab_id":"w1:t1","agent_status":"unknown","focused":true,"label":"~","number":1,"pane_count":1,"tab_count":1,"workspace_id":"w1"}}}
+{"id":"cli:workspace:create","result":{"root_pane":{"agent_status":"unknown","cwd":"/tmp/fm-retire-live.X75Dl5/home","focused":true,"foreground_cwd":"/tmp/fm-retire-live.X75Dl5/home","pane_id":"w1:p1","revision":0,"scroll":{"max_offset_from_bottom":0,"offset_from_bottom":0,"viewport_rows":40},"tab_id":"w1:t1","terminal_id":"term_65d3d351c95f11","workspace_id":"w1"},"tab":{"agent_status":"unknown","focused":true,"label":"1","number":1,"pane_count":1,"tab_id":"w1:t1","workspace_id":"w1"},"type":"workspace_created","workspace":{"active_tab_id":"w1:t1","agent_status":"unknown","focused":true,"label":"~","number":1,"pane_count":1,"tab_count":1,"workspace_id":"w1"}}}
+--- initial
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":true}]
+--- workspace lists
+retire-probe
+0
+busy
+1
+bystander
+1
+=== S1 reserved names
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh default
+fm-herdr-session-retire: refusing session name 'default'
+rc=1
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh fm-remote
+fm-herdr-session-retire: refusing session name 'fm-remote'
+rc=1
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh fm-lab-x
+fm-herdr-session-retire: refusing a generated lab session name; use bin/fm-herdr-lab.sh teardown instead: fm-lab-x
+rc=1
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh 
+fm-herdr-session-retire: refusing an empty session name
+rc=1
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":true}]
+=== S2 absent
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh no-such-session
+fm-herdr-session-retire: refusing 'no-such-session': expected exactly one matching session in the Herdr session list, found 0
+rc=1
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":true}]
+=== S3 non-empty
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh busy
+fm-herdr-session-retire: refusing 'busy': the target session is not empty
+rc=1
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":true}]
+=== S4 arg count / help
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+rc=2
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh a b
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+rc=2
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh --help
+Stop one explicitly named, pre-existing, empty Herdr session that this
+helper did not create and does not own.
+
+Usage:
+  fm-herdr-session-retire.sh <session>
+
+rc=0
+=== S5 empty target stop
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh retire-probe
+stopped retire-probe
+rc=0
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":false}]
+=== S6 already stopped
+$ /home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh retire-probe
+fm-herdr-session-retire: refusing 'retire-probe': session reports running=false
+rc=1
+[{"name":"busy","default":false,"running":true},{"name":"bystander","default":false,"running":true},{"name":"default","default":true,"running":false},{"name":"retire-probe","default":false,"running":false}]
+=== S7 target still listed (not deleted), others unchanged
+{"name":"retire-probe","running":false}

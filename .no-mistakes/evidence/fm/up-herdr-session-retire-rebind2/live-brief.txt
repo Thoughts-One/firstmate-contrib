@@ -1,0 +1,55 @@
+=== B1 valid name
+scaffolded: /tmp/fm-brief-live.oUtT7F/data/live-ok1/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+# Herdr retirement - HARD SAFETY CONTRACT
+This brief was explicitly scaffolded with `--herdr-retire-session old.sess_1-x` because the task's only Herdr lifecycle action is guardedly stopping one explicitly named, pre-existing session Firstmate did not provision.
+
+1. Run only `'/home/kai/.no-mistakes/worktrees/7605832e1988/01M4AWW6MG7Y1WSZXCRA0ZJRJT/bin/fm-herdr-session-retire.sh' 'old.sess_1-x'` to stop it.
+   It refuses the target unless it is empty, refuses `default`, `fm-remote`, and every `fm-lab-*` name, snapshots and re-verifies every other session before and after the call, and never deletes, restarts, or force-stops anything.
+2. Before that call, rule out concurrent writers against the target: Herdr has no conditional stop, so the helper's emptiness check is best-effort and another client can add a workspace between the final check and the stop.
+3. If it refuses, stop and report the exact refusal; do not fall back to a direct `herdr session stop` or any other bypass.
+4. Forbidden commands: direct `herdr server stop` or any other server-global operation, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.
+5. This is a different helper from `bin/fm-herdr-lab.sh`: it only ever operates on the one pre-existing session named above, never on a generated verification session.
+
+Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.
+The captain fleet uses the running `default` session.
+=== B2 bad names
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a`b] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a
+b] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a b] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a$(x)] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a;b] rc=1 brief_written=no
+error: --herdr-retire-session requires a value
+name=[--help] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[/x] rc=1 brief_written=no
+error: --herdr-retire-session name must contain only letters, digits, dots, underscores, or dashes
+name=[a"b] rc=1 brief_written=no
+=== B3 empty
+error: --herdr-retire-session requires a non-empty session name
+rc=1
+=== B4 exclusive with --herdr-lab
+error: --herdr-lab and --herdr-retire-session are mutually exclusive: the lab helper only ever operates on a session it generated itself, while the retirement helper only ever operates on a pre-existing session it did not create
+rc=1
+error: --herdr-lab and --herdr-retire-session are mutually exclusive: the lab helper only ever operates on a session it generated itself, while the retirement helper only ever operates on a pre-existing session it did not create
+rc=1
+=== B5 secondmate rejected
+error: --herdr-retire-session applies only to crewmate ship or scout briefs
+rc=1
+=== B6 scout + = form
+scaffolded: /tmp/fm-brief-live.oUtT7F/data/live-sc/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+1
+=== B7 no flag => NOT ENABLED declaration mentions retire flag
+scaffolded: /tmp/fm-brief-live.oUtT7F/data/live-no/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+13:If the task's only Herdr lifecycle action is stopping one explicitly named, pre-existing session Firstmate did not provision, stop and regenerate the brief with `--herdr-retire-session <name>` before dispatch instead.
+=== B8 lab flag unchanged
+scaffolded: /tmp/fm-brief-live.oUtT7F/data/live-lab/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+rc=0
+1
