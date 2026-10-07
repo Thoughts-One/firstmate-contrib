@@ -3965,14 +3965,16 @@ test_leaked_worktree_process_is_reaped() {
 }
 
 test_leaked_tasktmp_process_is_reaped() {
-  local case_dir rc pid
+  local case_dir rc pid task_tmp
   case_dir=$(make_case leaked-tasktmp-reap)
   write_meta "$case_dir" no-mistakes ship
-  printf '%s\n' "tasktmp=$case_dir/tasktmp" >> "$case_dir/state/task-x1.meta"
-  mkdir -p "$case_dir/tasktmp"
+  # Teardown acts only on a root with this task's uid-namespaced name.
+  task_tmp="$case_dir/fm-task-x1+uid$(id -u)"
+  printf '%s\n' "tasktmp=$task_tmp" >> "$case_dir/state/task-x1.meta"
+  mkdir -p "$task_tmp"
   land_shippable_commit "$case_dir"
 
-  ( cd "$case_dir/tasktmp" && exec sleep 300 ) &
+  ( cd "$task_tmp" && exec sleep 300 ) &
   pid=$!
   disown
   sleep 0.3
